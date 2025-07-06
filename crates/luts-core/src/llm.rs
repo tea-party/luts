@@ -1,9 +1,10 @@
 //! LLM Service for interacting with AI models
 //!
 //! This module provides a service for interacting with Large Language Models,
-//! supporting streaming responses and tool calling.
+//! supporting streaming responses, tool calling, and token usage tracking.
 
 use crate::tools::AiTool;
+use crate::token_manager::{TokenManager, TokenUsage};
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use futures::TryStreamExt;
@@ -16,6 +17,7 @@ use genai::chat::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::pin::Pin;
+use std::sync::Arc;
 use tracing::{debug, info};
 
 /// Response from a tool execution
@@ -191,6 +193,15 @@ pub struct LLMService {
 
     /// Underlying client for the LLM
     client: GenaiClient,
+    
+    /// Token manager for usage tracking
+    token_manager: Option<Arc<TokenManager>>,
+    
+    /// Session ID for token tracking
+    session_id: String,
+    
+    /// User ID for token tracking
+    user_id: String,
 }
 
 impl LLMService {
@@ -200,13 +211,25 @@ impl LLMService {
         tools: Vec<Box<dyn AiTool>>,
         provider: &str,
     ) -> Result<Self, Error> {
-        // Create a real genai client
+        Self::new_with_token_manager(system_prompt, tools, provider, None, "default_session", "default_user")
+    }
+    
+    /// Create a new LLM service with token tracking
+    pub fn new_with_token_manager(
+        system_prompt: Option<&str>,
+        tools: Vec<Box<dyn AiTool>>,
+        provider: &str,
+        token_manager: Option<Arc<TokenManager>>,
+        session_id: &str,
+        user_id: &str,
+    ) -> Result<Self, Error> {
+        // Create a real genai client with usage tracking enabled
         let client = GenaiClient::builder()
             .with_chat_options(genai::chat::ChatOptions {
                 capture_content: Some(true),
                 capture_reasoning_content: Some(true),
                 capture_tool_calls: Some(true),
-                capture_usage: Some(true),
+                capture_usage: Some(true), // Enable token usage tracking
                 ..Default::default()
             })
             .build();
@@ -216,6 +239,9 @@ impl LLMService {
             client,
             system_prompt: system_prompt.map(|s| s.to_string()),
             tools,
+            token_manager,
+            session_id: session_id.to_string(),
+            user_id: user_id.to_string(),
         })
     }
 
@@ -316,8 +342,13 @@ impl AiService for LLMService {
                     info!("LLM returned text response: {}", text);
                 }
                 MessageContent::ToolCalls(calls) => {
-                    info!("LLM returned {} tool calls: {:?}", calls.len(), 
-                          calls.iter().map(|c| &c.fn_name).collect::<Vec<_>>());
+                    info!("=== LLM TOOL CALLS DEBUG ===");
+                    info!("LLM returned {} tool calls", calls.len());
+                    for (i, call) in calls.iter().enumerate() {
+                        info!("Tool call #{}: name='{}', id='{}', args={:?}", 
+                              i + 1, call.fn_name, call.call_id, call.fn_arguments);
+                    }
+                    info!("=== END TOOL CALLS DEBUG ===");
                 }
                 MessageContent::Parts(parts) => {
                     info!("LLM returned {} parts", parts.len());
@@ -325,6 +356,22 @@ impl AiService for LLMService {
                 MessageContent::ToolResponses(responses) => {
                     info!("LLM returned {} tool responses", responses.len());
                 }
+            }
+        }
+
+        // Record token usage if manager is available
+        if let Some(token_manager) = &self.token_manager {
+            let token_usage = TokenUsage::from_genai_usage(
+                &response.usage,
+                self.provider.clone(),
+                self.provider.clone(), // For now, use provider as model name
+                "chat".to_string(),
+                self.session_id.clone(),
+                self.user_id.clone(),
+            );
+            
+            if let Err(e) = token_manager.record_usage(token_usage).await {
+                debug!("Failed to record token usage: {}", e);
             }
         }
 

@@ -18,6 +18,10 @@ pub enum AppEvent {
     AgentResponseError(String),
     AgentProcessingStarted,
     AgentProcessingFinished,
+    // Streaming events with ResponseChunk
+    StreamingChunk(luts_core::response_streaming::ResponseChunk),
+    StreamingComplete,
+    StreamingError(String),
 }
 
 pub struct EventHandler {

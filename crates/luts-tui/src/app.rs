@@ -407,6 +407,30 @@ impl App {
                     self.conversation.set_processing(false);
                 }
 
+                AppEvent::StreamingChunk(chunk) => {
+                    self.needs_redraw = true;
+                    debug!("Received streaming chunk: {:?}", chunk.chunk_type);
+                    if let Err(e) = self.conversation.handle_streaming_chunk(chunk) {
+                        error!("Failed to handle streaming chunk: {}", e);
+                    }
+                }
+
+                AppEvent::StreamingComplete => {
+                    self.needs_redraw = true;
+                    debug!("Streaming completed");
+                    if let Err(e) = self.conversation.handle_streaming_complete() {
+                        error!("Failed to handle streaming completion: {}", e);
+                    }
+                }
+
+                AppEvent::StreamingError(error) => {
+                    self.needs_redraw = true;
+                    debug!("Streaming error: {}", error);
+                    if let Err(e) = self.conversation.handle_streaming_error(error) {
+                        error!("Failed to handle streaming error: {}", e);
+                    }
+                }
+
                 AppEvent::Quit => {
                     self.state = AppState::Quitting;
                     break;

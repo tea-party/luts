@@ -8,7 +8,7 @@ license = "MIT"
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 fast_html2md = "0.0.48"
 fjall = "2.11.1"
 futures = { workspace = true }
@@ -21,7 +21,9 @@ scraper = "0.23.1"
 serde = { workspace = true }
 serde_cbor = "0.11.2"
 serde_json = { workspace = true }
+serde_yaml = "0.9"
 tokio = { workspace = true }
+tokio-stream = "0.1"
 tracing = { workspace = true }
 uuid = { workspace = true }
 

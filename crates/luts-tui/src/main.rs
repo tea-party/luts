@@ -11,7 +11,6 @@ use tracing::info;
 mod agent_selector;
 mod app;
 mod block_mode;
-mod blocks;
 mod components;
 mod config;
 mod config_manager;

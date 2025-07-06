@@ -22,7 +22,6 @@ use tracing::{debug, info, warn};
 enum ConfigSection {
     Theme,
     Keybindings,
-    Blocks,
     Defaults,
     Providers,
 }
@@ -163,8 +162,7 @@ impl ConfigManager {
                 self.current_section = match self.current_section {
                     ConfigSection::Theme => ConfigSection::Providers,
                     ConfigSection::Keybindings => ConfigSection::Theme,
-                    ConfigSection::Blocks => ConfigSection::Keybindings,
-                    ConfigSection::Defaults => ConfigSection::Blocks,
+                    ConfigSection::Defaults => ConfigSection::Keybindings,
                     ConfigSection::Providers => ConfigSection::Defaults,
                 };
                 self.settings_list_state.select(Some(0));
@@ -172,8 +170,7 @@ impl ConfigManager {
             KeyCode::Right | KeyCode::Char('l') => {
                 self.current_section = match self.current_section {
                     ConfigSection::Theme => ConfigSection::Keybindings,
-                    ConfigSection::Keybindings => ConfigSection::Blocks,
-                    ConfigSection::Blocks => ConfigSection::Defaults,
+                    ConfigSection::Keybindings => ConfigSection::Defaults,
                     ConfigSection::Defaults => ConfigSection::Providers,
                     ConfigSection::Providers => ConfigSection::Theme,
                 };
@@ -271,26 +268,6 @@ impl ConfigManager {
                     self.config.theme.warning.clone(),
                 ),
                 ("Error Color".to_string(), self.config.theme.error.clone()),
-                (
-                    "Block System Color".to_string(),
-                    self.config.theme.block_system.clone(),
-                ),
-                (
-                    "Block User Color".to_string(),
-                    self.config.theme.block_user.clone(),
-                ),
-                (
-                    "Block Memory Color".to_string(),
-                    self.config.theme.block_memory.clone(),
-                ),
-                (
-                    "Block Tool Color".to_string(),
-                    self.config.theme.block_tool.clone(),
-                ),
-                (
-                    "Block Response Color".to_string(),
-                    self.config.theme.block_response.clone(),
-                ),
             ],
             ConfigSection::Keybindings => vec![
                 (
@@ -302,11 +279,11 @@ impl ConfigManager {
                     self.config.keybindings.global.help.join(", "),
                 ),
                 (
-                    "Switch to Blocks".to_string(),
+                    "Switch to Memory Blocks".to_string(),
                     self.config
                         .keybindings
                         .global
-                        .switch_to_block_mode
+                        .switch_to_memory_blocks
                         .join(", "),
                 ),
                 (
@@ -322,58 +299,10 @@ impl ConfigManager {
                     self.config.keybindings.conversation.send_message.join(", "),
                 ),
                 (
-                    "Block Toggle Status".to_string(),
-                    self.config
-                        .keybindings
-                        .block_mode
-                        .toggle_block_status
-                        .join(", "),
-                ),
-                (
-                    "Block Create".to_string(),
-                    self.config.keybindings.block_mode.create_block.join(", "),
+                    "Memory Block Create".to_string(),
+                    self.config.keybindings.memory_blocks.create_block.join(", "),
                 ),
             ],
-            ConfigSection::Blocks => {
-                let mut settings = vec![
-                    (
-                        "Auto Complete Dependencies".to_string(),
-                        self.config
-                            .blocks
-                            .defaults
-                            .auto_complete_dependencies
-                            .to_string(),
-                    ),
-                    (
-                        "Show Dependency Warnings".to_string(),
-                        self.config
-                            .blocks
-                            .defaults
-                            .show_dependency_warnings
-                            .to_string(),
-                    ),
-                    (
-                        "Default Priority".to_string(),
-                        self.config.blocks.defaults.default_priority.to_string(),
-                    ),
-                    (
-                        "Auto Scroll to Ready".to_string(),
-                        self.config.blocks.defaults.auto_scroll_to_ready.to_string(),
-                    ),
-                ];
-
-                // Add template count and workflow count
-                settings.push((
-                    "Available Templates".to_string(),
-                    self.config.blocks.templates.len().to_string(),
-                ));
-                settings.push((
-                    "Available Workflows".to_string(),
-                    self.config.blocks.workflows.len().to_string(),
-                ));
-
-                settings
-            }
             ConfigSection::Defaults => vec![
                 (
                     "Data Directory".to_string(),
@@ -383,50 +312,20 @@ impl ConfigManager {
                     "Default Provider".to_string(),
                     self.config.defaults.provider.clone(),
                 ),
-                (
-                    "Default Agent".to_string(),
-                    self.config
-                        .defaults
-                        .default_agent
-                        .as_ref()
-                        .unwrap_or(&"None".to_string())
-                        .clone(),
-                ),
-                (
-                    "Auto Save Interval".to_string(),
-                    format!("{} seconds", self.config.defaults.auto_save_interval),
-                ),
-                (
-                    "Max History Length".to_string(),
-                    self.config.defaults.max_history_length.to_string(),
-                ),
-                (
-                    "Enable Streaming".to_string(),
-                    self.config.defaults.enable_streaming.to_string(),
-                ),
-                (
-                    "Log Level".to_string(),
-                    self.config.defaults.log_level.clone(),
-                ),
+                ("Default Agent".to_string(), self.config.defaults.agent.as_ref().unwrap_or(&"None".to_string()).clone()),
+                ("Auto Save".to_string(), self.config.defaults.auto_save.to_string()),
+                ("Max Log Entries".to_string(), self.config.defaults.max_log_entries.to_string()),
             ],
             ConfigSection::Providers => {
                 let mut settings = Vec::new();
                 for (provider_id, provider_config) in &self.config.providers {
                     settings.push((
-                        format!("{} Display Name", provider_id),
-                        provider_config.display_name.clone(),
+                        format!("{} Name", provider_id),
+                        provider_config.name.clone(),
                     ));
                     settings.push((
-                        format!("{} Model", provider_id),
-                        provider_config.model_settings.model.clone(),
-                    ));
-                    settings.push((
-                        format!("{} Timeout", provider_id),
-                        format!("{} seconds", provider_config.api.timeout),
-                    ));
-                    settings.push((
-                        format!("{} Tools Enabled", provider_id),
-                        provider_config.tools.enabled.to_string(),
+                        format!("{} Settings Count", provider_id),
+                        provider_config.settings.len().to_string(),
                     ));
                 }
                 settings
@@ -447,11 +346,6 @@ impl ConfigManager {
                 "Success Color" => self.config.theme.success = new_value.to_string(),
                 "Warning Color" => self.config.theme.warning = new_value.to_string(),
                 "Error Color" => self.config.theme.error = new_value.to_string(),
-                "Block System Color" => self.config.theme.block_system = new_value.to_string(),
-                "Block User Color" => self.config.theme.block_user = new_value.to_string(),
-                "Block Memory Color" => self.config.theme.block_memory = new_value.to_string(),
-                "Block Tool Color" => self.config.theme.block_tool = new_value.to_string(),
-                "Block Response Color" => self.config.theme.block_response = new_value.to_string(),
                 _ => {
                     warn!("Unknown theme setting: {}", setting_name);
                     return Ok(());
@@ -461,29 +355,23 @@ impl ConfigManager {
                 "Data Directory" => self.config.defaults.data_dir = new_value.to_string(),
                 "Default Provider" => self.config.defaults.provider = new_value.to_string(),
                 "Default Agent" => {
-                    self.config.defaults.default_agent =
+                    self.config.defaults.agent =
                         if new_value == "None" || new_value.is_empty() {
                             None
                         } else {
                             Some(new_value.to_string())
                         };
                 }
-                "Auto Save Interval" => {
-                    if let Ok(interval) = new_value.replace(" seconds", "").parse::<u64>() {
-                        self.config.defaults.auto_save_interval = interval;
-                    }
-                }
-                "Max History Length" => {
-                    if let Ok(length) = new_value.parse::<usize>() {
-                        self.config.defaults.max_history_length = length;
-                    }
-                }
-                "Enable Streaming" => {
+                "Auto Save" => {
                     if let Ok(enable) = new_value.parse::<bool>() {
-                        self.config.defaults.enable_streaming = enable;
+                        self.config.defaults.auto_save = enable;
                     }
                 }
-                "Log Level" => self.config.defaults.log_level = new_value.to_string(),
+                "Max Log Entries" => {
+                    if let Ok(entries) = new_value.parse::<usize>() {
+                        self.config.defaults.max_log_entries = entries;
+                    }
+                }
                 _ => {
                     warn!("Unknown defaults setting: {}", setting_name);
                     return Ok(());
@@ -588,14 +476,13 @@ impl ConfigManager {
 
     fn render_section_tabs(&self, frame: &mut Frame, area: Rect) {
         let focused = self.focused_panel == FocusedPanel::SectionTabs;
-        let titles = vec!["Theme", "Keybindings", "Blocks", "Defaults", "Providers"];
+        let titles = vec!["Theme", "Keybindings", "Defaults", "Providers"];
 
         let selected_index = match self.current_section {
             ConfigSection::Theme => 0,
             ConfigSection::Keybindings => 1,
-            ConfigSection::Blocks => 2,
-            ConfigSection::Defaults => 3,
-            ConfigSection::Providers => 4,
+            ConfigSection::Defaults => 2,
+            ConfigSection::Providers => 3,
         };
 
         let style = if focused {
@@ -632,7 +519,7 @@ impl ConfigManager {
                 let content = Line::from(vec![
                     Span::styled(
                         format!("{}: ", name),
-                        Style::default().fg(self.config.get_color(&self.config.theme.text_accent)),
+                        Style::default().fg(self.config.get_color(&self.config.theme.text_primary)),
                     ),
                     Span::styled(
                         value.clone(),

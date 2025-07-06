@@ -9,7 +9,7 @@ use reqwest;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::trace;
+use tracing::{debug, trace};
 
 /// Parameters for the DuckDuckGo search tool.
 #[derive(Deserialize)]
@@ -74,8 +74,14 @@ inurl:cats	URL contains "cats""#
             .map_err(|_| anyhow!("Missing or invalid 'query' parameter"))?;
         let num_results = params.num_results.unwrap_or(3).clamp(1, 10);
 
+        debug!("=== DDG SEARCH DEBUG ===");
+        debug!("Query: '{}'", params.query);
+        debug!("Num results: {}", num_results);
+
         let client = reqwest::Client::new();
         let url = format!("https://html.duckduckgo.com/html/?q={}", params.query);
+        debug!("Request URL: {}", url);
+
         let resp = client
             .get(&url)
             .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -95,10 +101,32 @@ inurl:cats	URL contains "cats""#
             .send()
             .await
             .map_err(|e| anyhow!("Request error: {}", e))?;
+
+        debug!("Response status: {}", resp.status());
+        debug!("Response headers: {:?}", resp.headers());
+
         let body = resp
             .text()
             .await
             .map_err(|e| anyhow!("Body error: {}", e))?;
+
+        debug!("Response body length: {} characters", body.len());
+
+        // Check for potential blocking or redirection patterns
+        if body.contains("blocked") || body.contains("captcha") || body.contains("verify") {
+            debug!(
+                "WARNING: Response may indicate blocking: contains 'blocked', 'captcha', or 'verify'"
+            );
+        }
+
+        if body.len() < 1000 {
+            debug!(
+                "WARNING: Very short response body ({}): {}",
+                body.len(),
+                body.chars().take(200).collect::<String>()
+            );
+        }
+
         let document = Html::parse_document(&body);
 
         trace!("Parsed HTML document for query: {}", params.query);
@@ -141,6 +169,17 @@ inurl:cats	URL contains "cats""#
             .take(num_results)
             .collect::<Vec<_>>();
 
+        debug!("Parsed {} search results", results.len());
+        for (i, result) in results.iter().enumerate() {
+            debug!(
+                "Result #{}: title='{}', link='{}'",
+                i + 1,
+                result.title,
+                result.link
+            );
+        }
+        debug!("=== END DDG SEARCH DEBUG ===");
+
         Ok(serde_json::json!({ "results": results }))
     }
 }
@@ -153,26 +192,31 @@ mod tests {
     #[test]
     fn test_tool_metadata() {
         let tool = DDGSearchTool;
-        
-        assert_eq!(tool.name(), "ddg_search");
+
+        assert_eq!(tool.name(), "search");
         assert!(!tool.description().is_empty());
         assert!(tool.description().contains("DuckDuckGo"));
-        
+
         let schema = tool.schema();
         assert!(schema["type"].as_str() == Some("object"));
         assert!(schema["properties"]["query"].is_object());
-        assert!(schema["required"].as_array().unwrap().contains(&json!("query")));
+        assert!(
+            schema["required"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("query"))
+        );
     }
 
     #[tokio::test]
     async fn test_parameter_validation() {
         let tool = DDGSearchTool;
-        
+
         // Missing query parameter
         let result = tool.execute(json!({})).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("query"));
-        
+
         // Wrong parameter type - this will pass JSON validation but fail query parsing
         let result = tool.execute(json!({"query": 123})).await;
         assert!(result.is_err());
@@ -181,10 +225,10 @@ mod tests {
     #[tokio::test]
     async fn test_valid_query_structure() {
         let tool = DDGSearchTool;
-        
+
         // Test with a simple valid query
         let result = tool.execute(json!({"query": "test"})).await;
-        
+
         match result {
             Ok(response) => {
                 // If successful, verify response structure
@@ -200,21 +244,26 @@ mod tests {
     #[tokio::test]
     async fn test_extra_parameters() {
         let tool = DDGSearchTool;
-        
+
         // Extra parameters in the right structure should work
-        let result = tool.execute(json!({
-            "query": "test",
-            "num_results": 5
-        })).await;
-        
+        let result = tool
+            .execute(json!({
+                "query": "test",
+                "num_results": 5
+            }))
+            .await;
+
         // Should not fail due to the extra num_results parameter
         match result {
-            Ok(_) => {}, // Success
+            Ok(_) => {} // Success
             Err(e) => {
                 // Should not be a parameter validation error
                 let error_msg = e.to_string().to_lowercase();
-                assert!(!error_msg.contains("unknown") && !error_msg.contains("unexpected"),
-                       "Failed due to extra parameters: {}", error_msg);
+                assert!(
+                    !error_msg.contains("unknown") && !error_msg.contains("unexpected"),
+                    "Failed due to extra parameters: {}",
+                    error_msg
+                );
             }
         }
     }
