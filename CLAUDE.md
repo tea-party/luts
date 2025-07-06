@@ -26,44 +26,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Current TODO List
 
-**EPIC FEATURES PROGRESS** (Last updated: 2025-01-06)
+## Epic Features Progress (Last updated: 2025-01-06)
+### Priority Features
+- [x] **Token Usage Tracking & Management** (HIGH)
+  _Comprehensive token tracking, budgeting, analytics_
+- [x] **Conversation Summarization** (HIGH)
+  _AI-powered conversation condensing with multiple strategies_
+- [x] **Context Saving and Loading** (HIGH)
+  _Complete context snapshots with save/load/restore_
+- [x] **Conversation Export/Import** (MEDIUM)
+  _Multi-format export/import with metadata preservation_
+- [x] **Conversation Search and Filtering** (MEDIUM)
+  _Advanced search with powerful filtering and analytics_
+- [x] **Conversation Bookmarks/Favorites** (MEDIUM)
+  _Complete bookmark system with categorization_
+- [x] **Auto-Save Functionality** (MEDIUM)
+  _Intelligent auto-save with conflict resolution_
+- [x] **Segment Editing/Deleting** (HIGH)
+  _Comprehensive conversation editing with undo/redo_
+- [x] **Response Streaming & Typing Indicators** (HIGH)
+  _Real-time streaming responses with progress tracking_
+- [x] **TUI Text Wrapping Fix** (HIGH)
+  _Proper text wrapping in scrollable chat areas_
+- [x] **Tool Explanation System** (HIGH)
+  _Models explain tool usage with reasoning and final responses_
+- [x] **Ensure Final Responses** (HIGH)
+  _System prompts and mechanisms to guarantee responses after tool use_
+- [ ] **Create Conversation Templates** (MEDIUM)
+  _Reusable conversation starters and formats_
+- [ ] **Implement Conversation Analytics Dashboard** (LOW)
+  _Usage metrics and insights_
+- [ ] **Add Keyboard Shortcuts Customization** (LOW)
+  _User-configurable hotkeys_
+- [ ] **Create Conversation Themes and Styling** (LOW)
+  _Visual customization options_
 
-✅ **COMPLETED (12/12 priority features):**
-1. ✅ **Token Usage Tracking & Management** (HIGH) - Comprehensive token tracking, budgeting, analytics
-2. ✅ **Conversation Summarization** (HIGH) - AI-powered conversation condensing with multiple strategies  
-3. ✅ **Context Saving and Loading** (HIGH) - Complete context snapshots with save/load/restore
-4. ✅ **Conversation Export/Import** (MEDIUM) - Multi-format export/import with metadata preservation
-5. ✅ **Conversation Search and Filtering** (MEDIUM) - Advanced search with powerful filtering and analytics
-6. ✅ **Conversation Bookmarks/Favorites** (MEDIUM) - Complete bookmark system with categorization
-7. ✅ **Auto-Save Functionality** (MEDIUM) - Intelligent auto-save with conflict resolution
-8. ✅ **Segment Editing/Deleting** (HIGH) - Comprehensive conversation editing with undo/redo
-9. ✅ **Response Streaming & Typing Indicators** (HIGH) - Real-time streaming responses with progress tracking
-10. ✅ **TUI Text Wrapping Fix** (HIGH) - Proper text wrapping in scrollable chat areas
-11. ✅ **Tool Explanation System** (HIGH) - Models explain tool usage with reasoning and final responses
-12. ✅ **Ensure Final Responses** (HIGH) - System prompts and mechanisms to guarantee responses after tool use
-
-🔄 **REMAINING BONUS FEATURES:**
-13. ⏳ **Create Conversation Templates** (MEDIUM) - Reusable conversation starters and formats
-14. ⏳ **Implement Conversation Analytics Dashboard** (LOW) - Usage metrics and insights
-15. ⏳ **Add Keyboard Shortcuts Customization** (LOW) - User-configurable hotkeys
-16. ⏳ **Create Conversation Themes and Styling** (LOW) - Visual customization options
-
-**Status:** 12/12 priority features completed! The system is now truly "epicified" with:
-- Enterprise-grade conversation management 
-- Professional editing capabilities
-- Real-time streaming responses
-- Intelligent tool explanations
-- Comprehensive text wrapping
-- Complete feature set for production use
-
-**Recent Achievements:**
-- ✅ Added response streaming with typing indicators and progress tracking
-- ✅ Fixed TUI scrollable text wrapping with width-aware rendering
-- ✅ Enhanced all personality agents with tool explanation prompts
-- ✅ Added post-tool execution prompts to ensure clear final responses
-- ✅ System now automatically explains tool usage and reasoning
-
-**Next Steps:** Continue with bonus features or work on other user requests.
 
 ## Git Workflow - Feature Branches
 
@@ -143,7 +140,7 @@ cargo test -p luts-core
 # Install CLI from local path
 cargo install --path crates/luts-cli
 
-# Install TUI from local path  
+# Install TUI from local path
 cargo install --path crates/luts-tui
 
 # Install API server from local path
@@ -276,7 +273,7 @@ This is a Rust workspace with three main components and a **multiagent system**:
 ## Configuration
 
 - CLI accepts `--data-dir` and `--provider` arguments
-- TUI accepts `--data-dir`, `--provider`, and `--agent` arguments for direct agent selection  
+- TUI accepts `--data-dir`, `--provider`, and `--agent` arguments for direct agent selection
 - API server accepts `--host`, `--port`, `--data-dir`, `--provider`
 - No config files currently - all configuration via command-line arguments
 - Supports environment variables through `dotenvy` in CLI and TUI
