@@ -1,0 +1,30 @@
+[package]
+name = "luts-api"
+version = "0.1.0"
+edition = "2024"
+description = "OpenAI-compatible API server for Layered Universal Tiered Storage for AI"
+license = "MIT"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true }
+clap.workspace = true
+futures = { workspace = true }
+futures-util = { workspace = true }
+genai = { workspace = true }
+http-body-util = "0.1.3"
+luts-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = "0.1.17"
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
+[[bin]]
+name = "luts-api"
+path = "src/main.rs"
