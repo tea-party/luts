@@ -25,7 +25,8 @@ impl BlockUtils {
 
     /// Delete a memory block by its ID.
     pub async fn delete_block(&self, id: &BlockId) -> Result<()> {
-        self.memory_manager.delete(id).await
+        self.memory_manager.delete(id).await?;
+        Ok(())
     }
 
     /// Update a memory block by deleting the old one and storing the new one.
@@ -48,13 +49,20 @@ impl BlockUtils {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{BlockType, FjallMemoryStore, MemoryBlockBuilder, MemoryContent};
+    use crate::memory::{BlockType, SurrealMemoryStore, SurrealConfig, MemoryBlockBuilder, MemoryContent};
     use tempfile::tempdir;
 
     #[tokio::test]
     async fn test_block_utils_crud() {
         let dir = tempdir().unwrap();
-        let store = FjallMemoryStore::new(dir.path()).unwrap();
+        let db_path = dir.path().join("test.db");
+        let config = SurrealConfig::File {
+            path: db_path,
+            namespace: "test".to_string(),
+            database: "memory".to_string(),
+        };
+        let store = SurrealMemoryStore::new(config).await.unwrap();
+        store.initialize_schema_with_dimensions(384).await.unwrap();
         let manager = Arc::new(MemoryManager::new(store));
         let utils = BlockUtils::new(manager.clone());
 

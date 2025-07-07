@@ -7,7 +7,7 @@ use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A unique identifier for a memory block
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct BlockId(pub String);
 
 impl BlockId {

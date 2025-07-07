@@ -9,7 +9,7 @@ pub mod personality;
 pub mod registry;
 
 pub use base_agent::{BaseAgent, MessageSender};
-pub use communication::{AgentMessage, MessageResponse, MessageType};
+pub use communication::{AgentMessage, MessageResponse, MessageType, ToolCallInfo};
 pub use personality::{PersonalityAgent, PersonalityAgentBuilder};
 pub use registry::AgentRegistry;
 

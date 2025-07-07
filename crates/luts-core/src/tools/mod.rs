@@ -7,8 +7,11 @@
 pub mod block;
 pub mod calc;
 pub mod delete_block;
+pub mod interactive_tester;
+pub mod modify_core_block;
 pub mod retrieve_context;
 pub mod search;
+pub mod semantic_search;
 pub mod update_block;
 pub mod website;
 

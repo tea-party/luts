@@ -37,7 +37,7 @@ pub struct ResponseChunk {
 }
 
 /// Types of response chunks
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ChunkType {
     /// Regular text content
     Text,
@@ -575,7 +575,7 @@ impl ResponseStreamManager {
         let mut stream = ai_service.generate_response_stream(&messages).await?;
 
         let mut accumulated_text = String::new();
-        let mut tool_calls: Vec<genai::chat::ToolChunk> = Vec::new();
+        let mut tool_calls: Vec<genai::chat::ToolCall> = Vec::new();
 
         // Process stream events
         while let Some(event_result) = stream.next().await {
@@ -670,6 +670,9 @@ impl ResponseStreamManager {
                             // Handle tool call chunk with proper formatting
                             debug!("Received tool call chunk: {:?}", t);
 
+                            // Store the tool call for execution
+                            tool_calls.push(t.tool_call.clone());
+
                             // Create a formatted tool call chunk for UI
                             let tool_content = format!(
                                 "🔧 Calling {} with args: {}",
@@ -712,6 +715,141 @@ impl ResponseStreamManager {
                                 break;
                             }
                             sequence += 1;
+
+                            // Execute the tool call if we have access to the LLM service
+                            if let Some(llm_service) = ai_service.as_any().downcast_ref::<crate::llm::LLMService>() {
+                                if let Some(tool) = llm_service.find_tool(&t.tool_call.fn_name) {
+                                    debug!("Executing tool: {}", t.tool_call.fn_name);
+                                    
+                                    // Execute the tool
+                                    match tool.execute(t.tool_call.fn_arguments.clone()).await {
+                                        Ok(result) => {
+                                            debug!("Tool {} executed successfully: {:?}", t.tool_call.fn_name, result);
+                                            
+                                            // Send tool result chunk
+                                            let result_content = format!("✅ Tool result: {}", serde_json::to_string(&result).unwrap_or_else(|_| result.to_string()));
+                                            
+                                            let result_chunk = ResponseChunk {
+                                                id: format!("{}_{}", session_id, sequence),
+                                                sequence,
+                                                content: result_content,
+                                                is_final: false,
+                                                timestamp: Utc::now(),
+                                                chunk_type: ChunkType::ToolResponse,
+                                                metadata: ChunkMetadata {
+                                                    token_count: None,
+                                                    processing_time_ms: Some(
+                                                        (Utc::now() - start_time).num_milliseconds() as u64,
+                                                    ),
+                                                    model: None,
+                                                    confidence: None,
+                                                    custom: {
+                                                        let mut custom = HashMap::new();
+                                                        custom.insert(
+                                                            "tool_name".to_string(),
+                                                            serde_json::Value::String(t.tool_call.fn_name.clone()),
+                                                        );
+                                                        custom.insert(
+                                                            "tool_result".to_string(),
+                                                            result.clone(),
+                                                        );
+                                                        custom
+                                                    },
+                                                },
+                                            };
+
+                                            if chunk_sender.send(result_chunk).await.is_err() {
+                                                warn!("Failed to send tool result chunk for session: {}", session_id);
+                                                break;
+                                            }
+                                            sequence += 1;
+                                        }
+                                        Err(e) => {
+                                            warn!("Tool {} execution failed: {}", t.tool_call.fn_name, e);
+                                            
+                                            // Send error chunk  
+                                            let error_content = format!("❌ Tool error: {}", e);
+                                            
+                                            let error_chunk = ResponseChunk {
+                                                id: format!("{}_{}", session_id, sequence),
+                                                sequence,
+                                                content: error_content,
+                                                is_final: false,
+                                                timestamp: Utc::now(),
+                                                chunk_type: ChunkType::ToolResponse,
+                                                metadata: ChunkMetadata {
+                                                    token_count: None,
+                                                    processing_time_ms: Some(
+                                                        (Utc::now() - start_time).num_milliseconds() as u64,
+                                                    ),
+                                                    model: None,
+                                                    confidence: None,
+                                                    custom: {
+                                                        let mut custom = HashMap::new();
+                                                        custom.insert(
+                                                            "tool_name".to_string(),
+                                                            serde_json::Value::String(t.tool_call.fn_name.clone()),
+                                                        );
+                                                        custom.insert(
+                                                            "error".to_string(),
+                                                            serde_json::Value::String(e.to_string()),
+                                                        );
+                                                        custom
+                                                    },
+                                                },
+                                            };
+
+                                            if chunk_sender.send(error_chunk).await.is_err() {
+                                                warn!("Failed to send tool error chunk for session: {}", session_id);
+                                                break;
+                                            }
+                                            sequence += 1;
+                                        }
+                                    }
+                                } else {
+                                    warn!("Tool not found: {}", t.tool_call.fn_name);
+                                    
+                                    // Send tool not found error
+                                    let error_content = format!("❌ Tool error: Tool '{}' not found", t.tool_call.fn_name);
+                                    
+                                    let error_chunk = ResponseChunk {
+                                        id: format!("{}_{}", session_id, sequence),
+                                        sequence,
+                                        content: error_content,
+                                        is_final: false,
+                                        timestamp: Utc::now(),
+                                        chunk_type: ChunkType::ToolResponse,
+                                        metadata: ChunkMetadata {
+                                            token_count: None,
+                                            processing_time_ms: Some(
+                                                (Utc::now() - start_time).num_milliseconds() as u64,
+                                            ),
+                                            model: None,
+                                            confidence: None,
+                                            custom: {
+                                                let mut custom = HashMap::new();
+                                                custom.insert(
+                                                    "tool_name".to_string(),
+                                                    serde_json::Value::String(t.tool_call.fn_name.clone()),
+                                                );
+                                                custom.insert(
+                                                    "error".to_string(),
+                                                    serde_json::Value::String(format!("Tool '{}' not found", t.tool_call.fn_name)),
+                                                );
+                                                custom
+                                            },
+                                        },
+                                    };
+
+                                    if chunk_sender.send(error_chunk).await.is_err() {
+                                        warn!("Failed to send tool not found error chunk for session: {}", session_id);
+                                        break;
+                                    }
+                                    sequence += 1;
+                                }
+                            } else {
+                                warn!("Cannot execute tools: AI service is not an LLMService instance");
+                            }
                         }
 
                         ChatStreamEvent::ReasoningChunk(c) => {

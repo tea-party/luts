@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, MouseEvent};
+use luts_core::agents::MessageResponse;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 
@@ -14,12 +15,12 @@ pub enum AppEvent {
     Quit,
     AgentSelected(String),
     MessageSent(String),
-    AgentResponseReceived(String),
+    AgentResponseReceived(MessageResponse), // Now includes full response with tool calls
     AgentResponseError(String),
     AgentProcessingStarted,
     AgentProcessingFinished,
     // Streaming events with ResponseChunk
-    StreamingChunk(luts_core::response_streaming::ResponseChunk),
+    StreamingChunk(luts_core::streaming::ResponseChunk),
     StreamingComplete,
     StreamingError(String),
 }

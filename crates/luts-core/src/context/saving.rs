@@ -5,8 +5,8 @@
 
 use crate::llm::InternalChatMessage;
 use crate::memory::{MemoryBlock, MemoryManager, MemoryQuery};
-use crate::summarization::{ConversationSummary, ConversationSummarizer};
-use crate::token_manager::{TokenManager, TokenUsage, UsageFilter};
+use crate::conversation::summarization::{ConversationSummary, ConversationSummarizer};
+use crate::utils::tokens::{TokenManager, TokenUsage, UsageFilter};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

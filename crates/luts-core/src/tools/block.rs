@@ -1,9 +1,10 @@
+use crate::memory::{BlockType, MemoryBlockBuilder, MemoryContent, MemoryManager};
 use crate::tools::AiTool;
-use crate::memory::{MemoryManager, MemoryBlockBuilder, MemoryContent, BlockType};
 use anyhow::{Error, Result, anyhow};
 use async_trait::async_trait;
 use serde_json::{Value, json};
 use std::sync::Arc;
+use tracing::info;
 
 /// Tool for creating and storing a new memory block (fact, message, summary, etc.)
 pub struct BlockTool {
@@ -26,14 +27,14 @@ impl AiTool for BlockTool {
             "properties": {
                 "user_id": { "type": "string" },
                 "session_id": { "type": "string" },
-                "block_type": { 
-                    "type": "string", 
+                "block_type": {
+                    "type": "string",
                     "enum": ["Fact", "Message", "Summary", "Preference", "PersonalInfo", "Goal", "Task"],
                     "description": "Type of memory block: Fact (long-term knowledge), Message (conversation), Summary (condensed info), Preference (user settings), PersonalInfo (about user), Goal (objectives), Task (actions)"
                 },
                 "content": { "type": "string", "description": "The content to store in the memory block" },
-                "tags": { 
-                    "type": "array", 
+                "tags": {
+                    "type": "array",
                     "items": { "type": "string" },
                     "description": "Optional tags to categorize the block"
                 }
@@ -43,12 +44,27 @@ impl AiTool for BlockTool {
     }
 
     async fn execute(&self, params: Value) -> Result<Value, Error> {
-        let user_id = params.get("user_id").and_then(|v| v.as_str()).ok_or_else(|| anyhow!("Missing user_id"))?;
+        let user_id = params
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow!("Missing user_id"))?;
         let session_id = params.get("session_id").and_then(|v| v.as_str());
-        let block_type = params.get("block_type").and_then(|v| v.as_str()).ok_or_else(|| anyhow!("Missing block_type"))?;
-        let content = params.get("content").and_then(|v| v.as_str()).ok_or_else(|| anyhow!("Missing content"))?;
-        let tags = params.get("tags").and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect::<Vec<_>>())
+        let block_type = params
+            .get("block_type")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow!("Missing block_type"))?;
+        let content = params
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow!("Missing content"))?;
+        let tags = params
+            .get("tags")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|s| s.as_str().map(|s| s.to_string()))
+                    .collect::<Vec<_>>()
+            })
             .unwrap_or_default();
 
         let block_type = match block_type {
@@ -76,10 +92,13 @@ impl AiTool for BlockTool {
             builder = builder.with_tag(tag);
         }
 
+        info!("Done initing block");
+
         let block = builder.build()?;
+        info!("Done building block, Storing block: {:?}", block);
         let block_id = self.memory_manager.store(block).await?;
 
-        Ok(json!({ 
+        Ok(json!({
             "success": true,
             "block_id": block_id.as_str(),
             "message": format!("Created {} block with ID {}", block_type, block_id)

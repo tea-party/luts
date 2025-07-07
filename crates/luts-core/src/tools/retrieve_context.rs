@@ -77,8 +77,8 @@ impl AiTool for RetrieveContextTool {
         let query = MemoryQuery {
             user_id: Some(user_id.to_string()),
             session_id,
-            content_query,
-            block_types,
+            content_contains: content_query,
+            block_types: block_types.unwrap_or_default(),
             limit,
             ..Default::default()
         };

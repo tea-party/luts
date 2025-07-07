@@ -4,8 +4,8 @@
 //! supporting full-text search, semantic search, and complex filtering criteria.
 
 use crate::memory::{MemoryManager, BlockType};
-use crate::conversation_export::{ExportableConversation, MessageType, ConversationMetadata};
-use crate::token_manager::TokenManager;
+use crate::conversation::export::{ExportableConversation, MessageType, ConversationMetadata};
+use crate::utils::tokens::TokenManager;
 use anyhow::Result;
 use chrono::{DateTime, Utc, Duration, Timelike};
 use serde::{Deserialize, Serialize};

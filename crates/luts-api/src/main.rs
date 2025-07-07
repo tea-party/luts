@@ -10,7 +10,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use axum::Router;
 use clap::Parser;
-use luts_core::block_utils::BlockUtils;
+use luts_core::utils::blocks::BlockUtils;
 use luts_core::llm::LLMService;
 use luts_core::tools::calc::MathTool;
 use luts_core::tools::search::DDGSearchTool;
@@ -89,10 +89,14 @@ async fn main() -> Result<()> {
     // Initialize conversation store (you may want to use a real store)
     let conversation_store = Mutex::new(HashMap::new());
 
-    // Initialize block utils and memory manager (replace with your actual MemoryManager initialization)
-    let memory_manager = Arc::new(luts_core::memory::MemoryManager::new(
-        luts_core::memory::FjallMemoryStore::new(&args.data_dir).unwrap(),
-    ));
+    // Initialize block utils and memory manager with SurrealDB
+    let surreal_config = luts_core::memory::SurrealConfig::File {
+        path: args.data_dir.join("memory.db"),
+        namespace: "luts".to_string(),
+        database: "memory".to_string(),
+    };
+    let surreal_store = luts_core::memory::SurrealMemoryStore::new(surreal_config).await.unwrap();
+    let memory_manager = Arc::new(luts_core::memory::MemoryManager::new(surreal_store));
     let block_utils = Arc::new(BlockUtils::new(memory_manager));
 
     // Build shared state for OpenAI endpoints

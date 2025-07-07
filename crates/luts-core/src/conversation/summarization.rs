@@ -5,7 +5,7 @@
 
 use crate::llm::{AiService, InternalChatMessage};
 use crate::memory::{MemoryBlock, MemoryBlockBuilder, MemoryContent, BlockType};
-use crate::token_manager::{TokenManager, TokenUsage};
+use crate::utils::tokens::{TokenManager, TokenUsage};
 use anyhow::Result;
 use chrono::{DateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};

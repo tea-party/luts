@@ -2,10 +2,11 @@
 
 use crate::agents::{Agent, AgentConfig, AgentMessage, MessageResponse};
 use crate::llm::{AiService, InternalChatMessage, LLMService};
-use crate::memory::{FjallMemoryStore, MemoryManager};
+use crate::memory::{SurrealMemoryStore, SurrealConfig, MemoryManager};
 use crate::tools::{
     AiTool, block::BlockTool, calc::MathTool, delete_block::DeleteBlockTool,
-    retrieve_context::RetrieveContextTool, search::DDGSearchTool, update_block::UpdateBlockTool,
+    modify_core_block::ModifyCoreBlockTool, retrieve_context::RetrieveContextTool, 
+    search::DDGSearchTool, semantic_search::SemanticSearchTool, update_block::UpdateBlockTool, 
     website::WebsiteTool,
 };
 use anyhow::{Error, anyhow};
@@ -37,7 +38,7 @@ impl PersonalityAgentBuilder {
                 \n\nIMPORTANT: When you use any tools: Always give a clear final answer or response after using tools".to_string()
             ),
             provider: provider.to_string(),
-            tool_names: vec!["search".to_string(), "website".to_string(), "block".to_string(), "retrieve_context".to_string(), "update_block".to_string()],
+            tool_names: vec!["search".to_string(), "website".to_string(), "block".to_string(), "retrieve_context".to_string(), "update_block".to_string(), "modify_core_block".to_string(), "semantic_search".to_string()],
             data_dir: data_dir.to_string(),
         };
 
@@ -45,7 +46,16 @@ impl PersonalityAgentBuilder {
             let agent_data_dir = format!("{}/agents/{}", data_dir, config.agent_id);
             std::fs::create_dir_all(&agent_data_dir)
                 .map_err(|e| anyhow!("Failed to create agent data directory: {}", e))?;
-            let memory_store = FjallMemoryStore::new(&agent_data_dir)?;
+            let surreal_config = SurrealConfig::File {
+                path: std::path::PathBuf::from(agent_data_dir).join("memory.db"),
+                namespace: "luts".to_string(),
+                database: "memory".to_string(),
+            };
+            let memory_store = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    SurrealMemoryStore::new(surreal_config).await
+                })
+            })?;
             std::sync::Arc::new(MemoryManager::new(memory_store))
         };
 
@@ -75,6 +85,10 @@ impl PersonalityAgentBuilder {
             Box::new(UpdateBlockTool {
                 memory_manager: memory_manager.clone(),
             }) as Box<dyn AiTool>,
+        );
+        tools.insert(
+            "semantic_search".to_string(),
+            Box::new(SemanticSearchTool::new(memory_manager.clone()).unwrap()) as Box<dyn AiTool>,
         );
 
         Ok(Box::new(PersonalityAgent::new(config, tools)?))
@@ -152,7 +166,7 @@ impl PersonalityAgentBuilder {
                 \n\nIMPORTANT: When you use any tools: Always provide clear recommendations or next actions based on the tool results".to_string()
             ),
             provider: provider.to_string(),
-            tool_names: vec!["calc".to_string(), "search".to_string(), "website".to_string(), "block".to_string(), "retrieve_context".to_string(), "update_block".to_string()],
+            tool_names: vec!["calc".to_string(), "search".to_string(), "website".to_string(), "block".to_string(), "retrieve_context".to_string(), "update_block".to_string(), "modify_core_block".to_string(), "semantic_search".to_string()],
             data_dir: data_dir.to_string(),
         };
 
@@ -160,7 +174,16 @@ impl PersonalityAgentBuilder {
             let agent_data_dir = format!("{}/agents/{}", data_dir, config.agent_id);
             std::fs::create_dir_all(&agent_data_dir)
                 .map_err(|e| anyhow!("Failed to create agent data directory: {}", e))?;
-            let memory_store = FjallMemoryStore::new(&agent_data_dir)?;
+            let surreal_config = SurrealConfig::File {
+                path: std::path::PathBuf::from(agent_data_dir).join("memory.db"),
+                namespace: "luts".to_string(),
+                database: "memory".to_string(),
+            };
+            let memory_store = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    SurrealMemoryStore::new(surreal_config).await
+                })
+            })?;
             std::sync::Arc::new(MemoryManager::new(memory_store))
         };
 
@@ -191,6 +214,10 @@ impl PersonalityAgentBuilder {
             Box::new(UpdateBlockTool {
                 memory_manager: memory_manager.clone(),
             }) as Box<dyn AiTool>,
+        );
+        tools.insert(
+            "semantic_search".to_string(),
+            Box::new(SemanticSearchTool::new(memory_manager.clone()).unwrap()) as Box<dyn AiTool>,
         );
 
         Ok(Box::new(PersonalityAgent::new(config, tools)?))
@@ -297,7 +324,18 @@ impl PersonalityAgent {
                         let agent_data_dir =
                             format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap();
-                        let memory_store = FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(MemoryManager::new(memory_store));
                         Box::new(BlockTool { memory_manager }) as Box<dyn AiTool>
                     }
@@ -305,7 +343,18 @@ impl PersonalityAgent {
                         let agent_data_dir =
                             format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap();
-                        let memory_store = FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(MemoryManager::new(memory_store));
                         Box::new(RetrieveContextTool { memory_manager }) as Box<dyn AiTool>
                     }
@@ -313,7 +362,18 @@ impl PersonalityAgent {
                         let agent_data_dir =
                             format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap();
-                        let memory_store = FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(MemoryManager::new(memory_store));
                         Box::new(UpdateBlockTool { memory_manager }) as Box<dyn AiTool>
                     }
@@ -321,9 +381,43 @@ impl PersonalityAgent {
                         let agent_data_dir =
                             format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap();
-                        let memory_store = FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(MemoryManager::new(memory_store));
                         Box::new(DeleteBlockTool { memory_manager }) as Box<dyn AiTool>
+                    }
+                    "modify_core_block" => {
+                        Box::new(ModifyCoreBlockTool::new(config.agent_id.clone(), None)) as Box<dyn AiTool>
+                    }
+                    "semantic_search" => {
+                        // Create memory manager for this tool instance
+                        let agent_data_dir =
+                            format!("{}/agents/{}", config.data_dir, config.agent_id);
+                        std::fs::create_dir_all(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
+                        let memory_manager = std::sync::Arc::new(MemoryManager::new(memory_store));
+                        Box::new(SemanticSearchTool::new(memory_manager).unwrap()) as Box<dyn AiTool>
                     }
                     _ => Box::new(DummyTool {
                         name: tool.name().to_string(),
@@ -338,7 +432,16 @@ impl PersonalityAgent {
         // Create memory manager with agent-specific data directory
         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
         std::fs::create_dir_all(&agent_data_dir)?;
-        let memory_store = FjallMemoryStore::new(&agent_data_dir)?;
+        let surreal_config = SurrealConfig::File {
+            path: std::path::PathBuf::from(agent_data_dir).join("memory.db"),
+            namespace: "luts".to_string(),
+            database: "memory".to_string(),
+        };
+        let memory_store = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                SurrealMemoryStore::new(surreal_config).await
+            })
+        })?;
         let memory_manager = MemoryManager::new(memory_store);
 
         Ok(PersonalityAgent {

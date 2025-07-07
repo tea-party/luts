@@ -6,14 +6,14 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use futures_util::StreamExt;
 use luts_core::agents::{Agent, AgentMessage};
 use luts_core::llm::{InternalChatMessage, LLMService};
-use luts_core::response_streaming::{ChunkType, ResponseStreamManager};
+use luts_core::streaming::{ChunkType, ResponseStreamManager};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{
-        Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Wrap,
     },
 };
@@ -80,6 +80,7 @@ pub struct ChatMessage {
     pub tool_calls: Vec<ToolCall>,
     pub show_reasoning: bool,
     cached_lines: Option<Vec<Line<'static>>>, // Cache rendered lines
+    cached_width: Option<usize>, // Track the width used for caching
     // Streaming state
     pub is_streaming: bool,
     pub streaming_complete: bool,
@@ -111,6 +112,7 @@ impl ChatMessage {
             tool_calls: Vec::new(),
             show_reasoning: true, // Show reasoning by default
             cached_lines: None,
+            cached_width: None,
             is_streaming: false,
             streaming_complete: false,
         }
@@ -127,6 +129,7 @@ impl ChatMessage {
             tool_calls: Vec::new(),
             show_reasoning: true,
             cached_lines: None,
+            cached_width: None,
             is_streaming: true,
             streaming_complete: false,
         }
@@ -138,6 +141,7 @@ impl ChatMessage {
             ChunkType::Text => {
                 self.content.push_str(chunk_content);
                 self.cached_lines = None; // Invalidate cache
+                self.cached_width = None; // Invalidate width cache
             }
             ChunkType::ToolCall => {
                 // Parse tool call information from chunk_content
@@ -149,6 +153,7 @@ impl ChatMessage {
                     self.content.push_str(chunk_content);
                 }
                 self.cached_lines = None;
+                self.cached_width = None;
             }
             ChunkType::ToolResponse => {
                 // Parse and update the last tool call with the result and status
@@ -169,6 +174,7 @@ impl ChatMessage {
                     self.content.push_str(chunk_content);
                 }
                 self.cached_lines = None;
+                self.cached_width = None;
             }
             ChunkType::Complete => {
                 self.is_streaming = false;
@@ -180,6 +186,7 @@ impl ChatMessage {
                 self.is_streaming = false;
                 self.streaming_complete = true;
                 self.cached_lines = None;
+                self.cached_width = None;
             }
             _ => {
                 // Handle other chunk types as needed
@@ -204,13 +211,13 @@ impl ChatMessage {
                 });
             }
         }
-        
+
         // Try to parse JSON-structured tool call data
         if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(chunk_content) {
             if let Some(tool_obj) = parsed.as_object() {
                 if let (Some(name), Some(args)) = (
                     tool_obj.get("tool_name").and_then(|v| v.as_str()),
-                    tool_obj.get("tool_args")
+                    tool_obj.get("tool_args"),
                 ) {
                     return Some(ToolCall {
                         name: name.to_string(),
@@ -221,7 +228,7 @@ impl ChatMessage {
                 }
             }
         }
-        
+
         None
     }
 
@@ -232,19 +239,20 @@ impl ChatMessage {
             let result = chunk_content.replace("✅ Tool result: ", "");
             return Some((result, ToolStatus::Completed));
         }
-        
+
         // Handle error results
         if chunk_content.starts_with("❌ Tool error: ") {
             let error = chunk_content.replace("❌ Tool error: ", "");
             return Some((error.clone(), ToolStatus::Failed(error)));
         }
-        
+
         // Handle JSON-structured tool results
         if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(chunk_content) {
             if let Some(result_obj) = parsed.as_object() {
                 if let Some(result) = result_obj.get("tool_result") {
-                    let result_str = serde_json::to_string(result).unwrap_or_else(|_| chunk_content.to_string());
-                    
+                    let result_str =
+                        serde_json::to_string(result).unwrap_or_else(|_| chunk_content.to_string());
+
                     // Check if there's an error field
                     if let Some(error) = result_obj.get("error").and_then(|v| v.as_str()) {
                         return Some((result_str, ToolStatus::Failed(error.to_string())));
@@ -254,7 +262,7 @@ impl ChatMessage {
                 }
             }
         }
-        
+
         // Return raw content as fallback (assume success)
         Some((chunk_content.to_string(), ToolStatus::Completed))
     }
@@ -269,6 +277,7 @@ impl ChatMessage {
             tool_calls: Vec::new(),
             show_reasoning: true, // Show reasoning by default
             cached_lines: None,
+            cached_width: None,
             is_streaming: false,
             streaming_complete: false,
         }
@@ -286,6 +295,7 @@ impl ChatMessage {
     pub fn toggle_reasoning(&mut self) {
         self.show_reasoning = !self.show_reasoning;
         self.cached_lines = None; // Invalidate cache when reasoning visibility changes
+        self.cached_width = None; // Also invalidate width cache
     }
 
     pub fn get_or_render_lines_with_width(
@@ -293,8 +303,8 @@ impl ChatMessage {
         markdown_renderer: &SimpleMarkdownRenderer,
         width: usize,
     ) -> &Vec<Line<'static>> {
-        // Invalidate cache if width is different (simple approach)
-        if self.cached_lines.is_none() {
+        // Invalidate cache if width is different or cache doesn't exist
+        if self.cached_lines.is_none() || self.cached_width != Some(width) {
             let mut lines = vec![];
 
             // Header line
@@ -346,70 +356,44 @@ impl ChatMessage {
                 }
             }
 
-            // Show tool calls if present
+            // Show tool calls if present - detailed display
             if !self.tool_calls.is_empty() {
-                lines.push(Line::from(Span::styled(
-                    "🔧 Tool Calls:".to_string(),
-                    Style::default()
-                        .fg(Color::Magenta)
-                        .add_modifier(Modifier::BOLD),
-                )));
-
                 for tool_call in &self.tool_calls {
-                    // Choose icon and color based on status
-                    let (status_icon, status_color) = match &tool_call.status {
-                        ToolStatus::Running => ("⏳", Color::Yellow),
-                        ToolStatus::Completed => ("✅", Color::Green),
-                        ToolStatus::Failed(_) => ("❌", Color::Red),
+                    // Format: [TOOL] Used `tool_name`: `{args}` -> `{result}`
+                    let status_icon = match &tool_call.status {
+                        ToolStatus::Running => "⏳",
+                        ToolStatus::Completed => "✅",
+                        ToolStatus::Failed(_) => "❌",
                     };
-
-                    let tool_line = format!("{} {} {}({})", 
-                        status_icon, 
-                        "🛠", 
-                        tool_call.name, 
-                        tool_call.arguments
-                    );
                     
-                    let wrapped_lines = wrap_text(&tool_line, width.saturating_sub(2)); // Account for indent
-                    for (i, wrapped_line) in wrapped_lines.iter().enumerate() {
-                        if i == 0 {
-                            lines.push(Line::from(vec![
-                                Span::styled("  ".to_string(), Style::default()),
-                                Span::styled(
-                                    wrapped_line.clone(),
-                                    Style::default()
-                                        .fg(status_color)
-                                        .add_modifier(Modifier::BOLD),
-                                ),
-                            ]));
-                        } else {
-                            lines.push(Line::from(vec![
-                                Span::styled("    ".to_string(), Style::default()),
-                                Span::styled(
-                                    wrapped_line.clone(),
-                                    Style::default().fg(Color::Gray),
-                                ),
-                            ]));
-                        }
-                    }
-
-                    if let Some(result) = &tool_call.result {
-                        let result_color = match &tool_call.status {
-                            ToolStatus::Completed => Color::Green,
-                            ToolStatus::Failed(_) => Color::Red,
-                            ToolStatus::Running => Color::Yellow,
-                        };
-                        
-                        let wrapped_results = wrap_text(result, width.saturating_sub(6)); // Account for indent
-                        for wrapped_result in wrapped_results {
-                            lines.push(Line::from(Span::styled(
-                                format!("    → {}", wrapped_result),
-                                Style::default().fg(result_color),
-                            )));
-                        }
+                    let tool_text = if let Some(result) = &tool_call.result {
+                        // Show tool call with result
+                        format!("[TOOL] {} Used `{}`: `{}` -> `{}`", 
+                               status_icon, tool_call.name, tool_call.arguments, result)
+                    } else {
+                        // Show tool call without result (still running)
+                        format!("[TOOL] {} Used `{}`: `{}`", 
+                               status_icon, tool_call.name, tool_call.arguments)
+                    };
+                    
+                    let tool_color = match &tool_call.status {
+                        ToolStatus::Running => Color::Yellow,
+                        ToolStatus::Completed => Color::Cyan,
+                        ToolStatus::Failed(_) => Color::Red,
+                    };
+                    
+                    // Wrap tool text if it's too long
+                    let wrapped_lines = wrap_text(&tool_text, width.saturating_sub(2));
+                    for wrapped_line in wrapped_lines {
+                        lines.push(Line::from(Span::styled(
+                            wrapped_line,
+                            Style::default()
+                                .fg(tool_color)
+                                .add_modifier(Modifier::ITALIC),
+                        )));
                     }
                 }
-                lines.push(Line::from("".to_string()));
+                lines.push(Line::from("".to_string())); // Empty line for spacing
             }
 
             // Main content with width-aware wrapping
@@ -445,6 +429,7 @@ impl ChatMessage {
             }
 
             self.cached_lines = Some(lines);
+            self.cached_width = Some(width);
         }
 
         self.cached_lines.as_ref().unwrap()
@@ -470,7 +455,8 @@ pub struct Conversation {
     processing: bool,
     rat_skin: SimpleMarkdownRenderer,
     scroll_state: ScrollbarState,
-    list_state: ListState,
+    /// Vertical scroll offset in lines for the chat history
+    scroll_offset: u16,
     // Streaming with ResponseStreamManager
     stream_manager: Arc<ResponseStreamManager>,
     current_streaming_message_idx: Option<usize>,
@@ -512,7 +498,7 @@ impl Conversation {
             processing: false,
             rat_skin,
             scroll_state: ScrollbarState::default(),
-            list_state: ListState::default(),
+            scroll_offset: 0,
             // Initialize streaming components
             stream_manager: Arc::new(ResponseStreamManager::new()),
             current_streaming_message_idx: None,
@@ -539,7 +525,7 @@ impl Conversation {
 
         // Auto-scroll to bottom
         if !self.messages.is_empty() {
-            self.list_state.select(Some(self.messages.len() - 1));
+            self.scroll_to_bottom();
         }
 
         self.agent = Some(Arc::new(RwLock::new(agent)));
@@ -561,41 +547,28 @@ impl Conversation {
                         && mouse.row >= area.y
                         && mouse.row < area.y + area.height
                     {
-                        // Focus the history component and calculate which message was clicked
+                        // Focus the history component
                         self.focused_component = FocusedComponent::History;
                         self.update_focus_styling();
-
-                        // Calculate which message was clicked (account for borders and content height)
-                        let relative_row = mouse.row.saturating_sub(area.y + 1); // +1 for top border
-
-                        // For simplicity, just set selection based on click position
-                        // A more sophisticated implementation would account for variable message heights
-                        let clicked_index = relative_row.saturating_sub(1) as usize; // -1 for title
-                        if !self.messages.is_empty() && clicked_index < self.messages.len() {
-                            self.list_state.select(Some(clicked_index));
-                        }
                     }
                 }
             }
             MouseEventKind::ScrollUp => {
                 if self.focused_component == FocusedComponent::History {
-                    let len = self.messages.len();
-                    if len > 0 {
-                        let selected = self.list_state.selected().unwrap_or(len);
-                        if selected > 0 {
-                            self.list_state.select(Some(selected - 1));
-                        }
+                    if self.scroll_offset > 0 {
+                        self.scroll_offset = self.scroll_offset.saturating_sub(3); // Scroll faster with mouse
                     }
                 }
             }
             MouseEventKind::ScrollDown => {
                 if self.focused_component == FocusedComponent::History {
-                    let len = self.messages.len();
-                    if len > 0 {
-                        let selected = self.list_state.selected().unwrap_or(0);
-                        if selected < len - 1 {
-                            self.list_state.select(Some(selected + 1));
-                        }
+                    // Use default width for mouse scroll calculation
+                    let total_lines = self.calculate_total_lines(80);
+                    let visible_height = 20; // Default estimate
+                    
+                    if total_lines > visible_height {
+                        let max_scroll = total_lines - visible_height;
+                        self.scroll_offset = (self.scroll_offset + 3).min(max_scroll as u16);
                     }
                 }
             }
@@ -660,7 +633,7 @@ impl Conversation {
 
                     // Auto-scroll to bottom
                     if !self.messages.is_empty() {
-                        self.list_state.select(Some(self.messages.len() - 1));
+                        self.scroll_to_bottom();
                     }
 
                     self.event_sender.send(AppEvent::MessageSent(text))?;
@@ -676,22 +649,21 @@ impl Conversation {
     }
 
     fn handle_history_key(&mut self, key: KeyEvent) -> Result<()> {
-        let len = self.messages.len();
-        if len == 0 {
-            return Ok(());
-        }
-
         match key.code {
             KeyCode::Up | KeyCode::Char('k') => {
-                let selected = self.list_state.selected().unwrap_or(len);
-                if selected > 0 {
-                    self.list_state.select(Some(selected - 1));
+                if self.scroll_offset > 0 {
+                    self.scroll_offset -= 1;
                 }
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                let selected = self.list_state.selected().unwrap_or(0);
-                if selected < len - 1 {
-                    self.list_state.select(Some(selected + 1));
+                // Calculate total lines to prevent over-scrolling
+                // Use a default width - will be corrected in render
+                let total_lines = self.calculate_total_lines(80);
+                let visible_height = 20; // Default estimate
+                
+                if total_lines > visible_height {
+                    let max_scroll = total_lines - visible_height;
+                    self.scroll_offset = (self.scroll_offset + 1).min(max_scroll as u16);
                 }
             }
             KeyCode::Char('r')
@@ -699,19 +671,34 @@ impl Conversation {
                     .modifiers
                     .contains(crossterm::event::KeyModifiers::CONTROL) =>
             {
-                // Toggle reasoning for selected message (or latest if none selected)
-                let selected = self.list_state.selected().unwrap_or(len.saturating_sub(1));
-                if let Some(message) = self.messages.get_mut(selected) {
-                    if message.reasoning.is_some() {
-                        message.toggle_reasoning();
-                    }
+                // Toggle reasoning for the most recent message with reasoning
+                if let Some(message) = self
+                    .messages
+                    .iter_mut()
+                    .rev()
+                    .find(|m| m.reasoning.is_some())
+                {
+                    message.toggle_reasoning();
                 }
             }
             KeyCode::Home => {
-                self.list_state.select(Some(0));
+                self.scroll_offset = 0;
             }
             KeyCode::End => {
-                self.list_state.select(Some(len - 1));
+                self.scroll_to_bottom();
+            }
+            KeyCode::PageUp => {
+                self.scroll_offset = self.scroll_offset.saturating_sub(10);
+            }
+            KeyCode::PageDown => {
+                // Use a default width - will be corrected in render
+                let total_lines = self.calculate_total_lines(80);
+                let visible_height = 20; // Default estimate
+                
+                if total_lines > visible_height {
+                    let max_scroll = total_lines - visible_height;
+                    self.scroll_offset = (self.scroll_offset + 10).min(max_scroll as u16);
+                }
             }
             _ => {}
         }
@@ -719,68 +706,7 @@ impl Conversation {
     }
 
     pub async fn send_message_to_agent(&mut self, message: String) -> Result<()> {
-        if let Some(llm_service) = &self.llm_service {
-            debug!("Sending message with streaming to LLM service: {}", message);
-
-            // Start processing indicator
-            self.event_sender.send(AppEvent::AgentProcessingStarted)?;
-            self.processing = true;
-            self.is_streaming = true;
-
-            // Create streaming message
-            let agent_name = if let Some(agent) = &self.agent {
-                agent.read().await.name().to_string()
-            } else {
-                "AI".to_string()
-            };
-
-            let streaming_message = ChatMessage::new_streaming(agent_name);
-            self.messages.push(streaming_message);
-            self.current_streaming_message_idx = Some(self.messages.len() - 1);
-
-            // Auto-scroll to bottom
-            if !self.messages.is_empty() {
-                self.list_state.select(Some(self.messages.len() - 1));
-            }
-
-            // Prepare messages for LLM
-            let mut conversation_messages = Vec::new();
-            conversation_messages.push(InternalChatMessage::User { content: message });
-
-            // Start streaming
-            let llm_service_clone = llm_service.clone();
-            let stream_manager_clone = self.stream_manager.clone();
-            let event_sender_clone = self.event_sender.clone();
-            let session_id = format!("session_{}", chrono::Utc::now().timestamp_millis());
-
-            tokio::spawn(async move {
-                match stream_manager_clone
-                    .stream_genai_response(session_id, llm_service_clone, conversation_messages)
-                    .await
-                {
-                    Ok(mut stream) => {
-                        // Process streaming chunks
-                        while let Some(chunk) = stream.next().await {
-                            let _ = event_sender_clone.send(AppEvent::StreamingChunk(chunk));
-                        }
-                        let _ = event_sender_clone.send(AppEvent::StreamingComplete);
-                    }
-                    Err(e) => {
-                        let _ = event_sender_clone.send(AppEvent::StreamingError(e.to_string()));
-                    }
-                }
-            });
-        } else {
-            debug!("No LLM service available, falling back to agent processing");
-            // Fallback to original agent processing if no LLM service
-            self.send_message_to_agent_fallback(message).await?;
-        }
-
-        Ok(())
-    }
-
-    /// Fallback method for non-streaming agent processing
-    async fn send_message_to_agent_fallback(&mut self, message: String) -> Result<()> {
+        // Always prefer the agent's own processing over direct LLM service
         if let Some(agent) = &self.agent {
             debug!("Sending message to agent: {}", message);
 
@@ -805,7 +731,7 @@ impl Conversation {
                     Ok(response) => {
                         if response.success {
                             let _ = event_sender_clone
-                                .send(AppEvent::AgentResponseReceived(response.content));
+                                .send(AppEvent::AgentResponseReceived(response));
                         } else {
                             let error_msg = response
                                 .error
@@ -823,6 +749,73 @@ impl Conversation {
                 // Notify processing finished
                 let _ = event_sender_clone.send(AppEvent::AgentProcessingFinished);
             });
+            
+            // Auto-scroll to bottom
+            self.scroll_to_bottom();
+        } else if let Some(llm_service) = &self.llm_service {
+            debug!("No agent available, falling back to direct LLM service: {}", message);
+            // Fallback to direct LLM service only if no agent is available
+            self.send_message_to_llm_service_fallback(message).await?;
+        } else {
+            debug!("No agent or LLM service available");
+            let error_msg = ChatMessage::new_plain("System".to_string(), "No agent or LLM service available".to_string());
+            self.messages.push(error_msg);
+            self.scroll_to_bottom();
+        }
+
+        Ok(())
+    }
+
+    /// Fallback method for direct LLM service (no agent available)
+    async fn send_message_to_llm_service_fallback(&mut self, message: String) -> Result<()> {
+        if let Some(llm_service) = &self.llm_service {
+            debug!("Sending message with streaming to LLM service: {}", message);
+
+            // Start processing indicator
+            self.event_sender.send(AppEvent::AgentProcessingStarted)?;
+            self.processing = true;
+            self.is_streaming = true;
+
+            // Create streaming message
+            let streaming_message = ChatMessage::new_streaming("AI".to_string());
+            self.messages.push(streaming_message);
+            self.current_streaming_message_idx = Some(self.messages.len() - 1);
+
+            // Prepare messages for LLM
+            let mut conversation_messages = Vec::new();
+            conversation_messages.push(InternalChatMessage::User { content: message });
+
+            // Start streaming
+            let llm_service_clone = llm_service.clone();
+            let stream_manager_clone = self.stream_manager.clone();
+            let event_sender_clone = self.event_sender.clone();
+            let session_id = format!("session_{}", chrono::Utc::now().timestamp_millis());
+
+            tokio::spawn(async move {
+                match stream_manager_clone
+                    .stream_genai_response(session_id, llm_service_clone, conversation_messages)
+                    .await
+                {
+                    Ok(mut stream) => {
+                        // Process streaming chunks
+                        while let Some(chunk) = stream.next().await {
+                            // if chunk is of type streamcomplete
+                            if chunk.chunk_type == ChunkType::Complete {
+                                let _ = event_sender_clone.send(AppEvent::StreamingComplete);
+                                break;
+                            }
+                            let _ = event_sender_clone.send(AppEvent::StreamingChunk(chunk));
+                        }
+                        let _ = event_sender_clone.send(AppEvent::StreamingComplete);
+                    }
+                    Err(e) => {
+                        let _ = event_sender_clone.send(AppEvent::StreamingError(e.to_string()));
+                    }
+                }
+            });
+            
+            // Auto-scroll to bottom after setting up streaming
+            self.scroll_to_bottom();
         }
 
         Ok(())
@@ -831,7 +824,7 @@ impl Conversation {
     /// Handle streaming chunk events
     pub fn handle_streaming_chunk(
         &mut self,
-        chunk: luts_core::response_streaming::ResponseChunk,
+        chunk: luts_core::streaming::ResponseChunk,
     ) -> Result<()> {
         if let Some(idx) = self.current_streaming_message_idx {
             if let Some(message) = self.messages.get_mut(idx) {
@@ -839,7 +832,7 @@ impl Conversation {
 
                 // Auto-scroll to follow streaming
                 if !self.messages.is_empty() {
-                    self.list_state.select(Some(self.messages.len() - 1));
+                    self.scroll_to_bottom();
                 }
 
                 debug!(
@@ -876,6 +869,7 @@ impl Conversation {
                 message.is_streaming = false;
                 message.streaming_complete = true;
                 message.cached_lines = None;
+                message.cached_width = None;
             }
         }
 
@@ -886,16 +880,38 @@ impl Conversation {
         info!("Streaming error: {}", error);
         Ok(())
     }
-    pub async fn handle_agent_response(&mut self, response: String) -> Result<()> {
+    pub async fn handle_agent_response(&mut self, response: luts_core::agents::MessageResponse) -> Result<()> {
         if let Some(agent) = &self.agent {
             let agent_name = agent.read().await.name().to_string();
-            let agent_msg = ChatMessage::new(agent_name, response);
+            
+            // Create a message with the response content
+            let mut agent_msg = ChatMessage::new(agent_name, response.content);
+            
+            // Add tool calls to the message if any were executed
+            for tool_call_info in response.tool_calls {
+                let tool_status = if tool_call_info.success {
+                    ToolStatus::Completed
+                } else {
+                    ToolStatus::Failed("Tool execution failed".to_string())
+                };
+                
+                let tool_call = ToolCall {
+                    name: tool_call_info.tool_name,
+                    arguments: serde_json::to_string(&tool_call_info.tool_args)
+                        .unwrap_or_else(|_| "{}".to_string()),
+                    result: Some(tool_call_info.tool_result),
+                    status: tool_status,
+                };
+                
+                agent_msg.add_tool_call(tool_call);
+            }
+            
             self.messages.push(agent_msg);
         }
 
         // Auto-scroll to bottom
         if !self.messages.is_empty() {
-            self.list_state.select(Some(self.messages.len() - 1));
+            self.scroll_to_bottom();
         }
 
         Ok(())
@@ -908,7 +924,7 @@ impl Conversation {
 
         // Auto-scroll to bottom
         if !self.messages.is_empty() {
-            self.list_state.select(Some(self.messages.len() - 1));
+            self.scroll_to_bottom();
         }
     }
 
@@ -941,6 +957,23 @@ impl Conversation {
     /// Get processing state (for external checks)
     pub fn is_processing(&self) -> bool {
         self.processing
+    }
+    
+    /// Get agent reference for context viewer integration
+    pub fn agent(&self) -> Option<Arc<RwLock<Box<dyn Agent>>>> {
+        self.agent.clone()
+    }
+    
+    /// Get LLM service reference for context viewer integration
+    pub fn llm_service(&self) -> Option<Arc<LLMService>> {
+        self.llm_service.clone()
+    }
+    
+    /// Get message history as strings for context viewer
+    pub fn get_message_history(&self) -> Vec<String> {
+        self.messages.iter().map(|msg| {
+            format!("{}: {}", msg.sender, msg.content)
+        }).collect()
     }
 
     pub fn render(&mut self, frame: &mut Frame) {
@@ -991,6 +1024,7 @@ impl Conversation {
                  \n\
                  Mode Switching:\n\
                  Ctrl+B      - Memory Blocks (view/edit AI memory)\n\
+                 Ctrl+W      - Context Window (view AI context composition)\n\
                  Ctrl+T      - Tool Activity (monitor AI tool usage)\n\
                  F2          - Configuration\n\
                  Esc         - Back to agent selection\n\
@@ -1012,17 +1046,32 @@ impl Conversation {
         // Calculate available width for text wrapping (subtract borders and scrollbar)
         let available_width = area.width.saturating_sub(4) as usize; // 2 for borders, 2 for scrollbar
 
-        // Create list items from messages using cached rendering with width
-        let items: Vec<ListItem> = self
-            .messages
-            .iter_mut()
-            .map(|msg| {
-                let lines = msg
-                    .get_or_render_lines_with_width(&self.rat_skin, available_width)
-                    .clone();
-                ListItem::new(Text::from(lines))
-            })
-            .collect();
+        // Recalculate total lines with actual available width
+        let total_lines = self.calculate_total_lines(available_width);
+        let visible_height = area.height.saturating_sub(2) as usize; // Subtract borders
+
+        // Ensure scroll offset is within bounds
+        if total_lines > visible_height {
+            let max_scroll = total_lines - visible_height;
+            self.scroll_offset = self.scroll_offset.min(max_scroll as u16);
+        } else {
+            self.scroll_offset = 0;
+        }
+
+        // Create all lines from all messages
+        let mut all_lines: Vec<Line<'static>> = Vec::new();
+
+        for msg in &mut self.messages {
+            let msg_lines = msg.get_or_render_lines_with_width(&self.rat_skin, available_width);
+            all_lines.extend(msg_lines.clone());
+            // Add an empty line between messages for better readability
+            all_lines.push(Line::from(""));
+        }
+
+        // Remove the last empty line if we added one
+        if !all_lines.is_empty() && all_lines.last().unwrap().spans.is_empty() {
+            all_lines.pop();
+        }
 
         let style = if focused {
             Style::default().fg(Color::Cyan)
@@ -1030,7 +1079,10 @@ impl Conversation {
             Style::default().fg(Color::Gray)
         };
 
-        let list = List::new(items)
+        // Use Paragraph instead of List to support proper scrolling
+        let total_lines = all_lines.len();
+        let text = Text::from(all_lines);
+        let paragraph = Paragraph::new(text)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
@@ -1038,14 +1090,27 @@ impl Conversation {
                     .border_style(style),
             )
             .style(Style::default().fg(Color::White))
-            .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+            .wrap(Wrap { trim: false }) // Don't trim to preserve formatting
+            .scroll((self.get_scroll_offset(), 0)); // Scroll vertically based on messages
 
-        frame.render_stateful_widget(list, area, &mut self.list_state);
+        frame.render_widget(paragraph, area);
 
-        // Render scrollbar
-        self.scroll_state = self.scroll_state.content_length(self.messages.len());
-        if let Some(selected) = self.list_state.selected() {
-            self.scroll_state = self.scroll_state.position(selected);
+        // Update scrollbar with proper positioning
+        // The scrollbar needs to know:
+        // 1. Total content length (total_lines)
+        // 2. Current viewport position (scroll_offset)
+        // 3. Viewport size (visible_height)
+        
+        if total_lines > visible_height {
+            // Only show scrollbar if content is larger than viewport
+            self.scroll_state = self.scroll_state
+                .content_length(total_lines.saturating_sub(visible_height))
+                .position(self.get_scroll_offset() as usize);
+        } else {
+            // No scrolling needed - hide scrollbar by setting content length to 0
+            self.scroll_state = self.scroll_state
+                .content_length(0)
+                .position(0);
         }
 
         frame.render_stateful_widget(
@@ -1117,10 +1182,10 @@ impl Conversation {
         } else {
             match self.focused_component {
                 FocusedComponent::Input => {
-            "Type your message | Tab: Switch to history | Ctrl+B: Blocks | Ctrl+T: Tools | Ctrl+L: Logs | F1: Help | Esc: Agent selection".to_string()
+            "Type your message | Tab: Switch to history | Ctrl+B: Blocks | Ctrl+W: Context | Ctrl+T: Tools | Ctrl+L: Logs | F1: Help | Esc: Agent selection".to_string()
                 }
                 FocusedComponent::History => {
-            "Navigate history | Tab: Switch to input | Ctrl+B: Blocks | Ctrl+T: Tools | Ctrl+L: Logs | F1: Help | Esc: Agent selection".to_string()
+            "Navigate history | Tab: Switch to input | Ctrl+B: Blocks | Ctrl+W: Context | Ctrl+T: Tools | Ctrl+L: Logs | F1: Help | Esc: Agent selection".to_string()
                 }
             }
         };
@@ -1138,5 +1203,50 @@ impl Conversation {
             .wrap(Wrap { trim: true });
 
         frame.render_widget(paragraph, area);
+    }
+
+    /// Get the current scroll offset for the paragraph widget
+    fn get_scroll_offset(&self) -> u16 {
+        self.scroll_offset
+    }
+
+    /// Calculate the total number of lines in all messages with given width
+    fn calculate_total_lines(&mut self, available_width: usize) -> usize {
+        let mut total_lines = 0;
+        
+        for msg in &mut self.messages {
+            let msg_lines = msg.get_or_render_lines_with_width(&self.rat_skin, available_width);
+            total_lines += msg_lines.len() + 1; // +1 for empty line between messages
+        }
+        
+        total_lines.saturating_sub(1) // Remove the last empty line
+    }
+
+    /// Scroll to the bottom of the chat history
+    fn scroll_to_bottom(&mut self) {
+        // Use a default width if we don't have access to the actual render area
+        // This will be overridden in render_chat_history with the actual width
+        let default_width = 80;
+        let default_height = 20; // Default visible height estimate
+        let total_lines = self.calculate_total_lines(default_width);
+        
+        if total_lines > default_height {
+            // Set scroll offset to show the bottom content
+            self.scroll_offset = (total_lines - default_height) as u16;
+        } else {
+            self.scroll_offset = 0;
+        }
+    }
+
+    /// Scroll to the bottom with specific width (called from render)
+    fn scroll_to_bottom_with_width(&mut self, available_width: usize, visible_height: usize) {
+        let total_lines = self.calculate_total_lines(available_width);
+        
+        if total_lines > visible_height {
+            // Set scroll offset to show the bottom content
+            self.scroll_offset = (total_lines - visible_height) as u16;
+        } else {
+            self.scroll_offset = 0;
+        }
     }
 }

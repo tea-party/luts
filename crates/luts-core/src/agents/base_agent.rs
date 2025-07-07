@@ -2,8 +2,8 @@
 
 use crate::agents::{Agent, AgentConfig, AgentMessage, MessageResponse};
 use crate::llm::{AiService, InternalChatMessage, LLMService};
-use crate::memory::{MemoryManager, FjallMemoryStore};
-use crate::tools::AiTool;
+use crate::memory::{MemoryManager, SurrealMemoryStore, SurrealConfig};
+use crate::tools::{AiTool, modify_core_block::ModifyCoreBlockTool};
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -52,36 +52,81 @@ impl BaseAgent {
                 // Create a new instance of each tool type based on its name
                 // This is a temporary workaround until we implement proper tool cloning
                 match name.as_str() {
-                    "calc" => Box::new(crate::tools::calc::MathTool) as Box<dyn AiTool>,
+                    "calculator" | "calc" => Box::new(crate::tools::calc::MathTool) as Box<dyn AiTool>,
                     "search" => Box::new(crate::tools::search::DDGSearchTool) as Box<dyn AiTool>,
                     "website" => Box::new(crate::tools::website::WebsiteTool) as Box<dyn AiTool>,
                     "retrieve_context" => {
                         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap_or_default();
-                        let memory_store = crate::memory::FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let surreal_config = SurrealConfig::File {
+                            path: std::path::PathBuf::from(agent_data_dir).join("memory.db"),
+                            namespace: "luts".to_string(),
+                            database: "memory".to_string(),
+                        };
+                        let memory_store = tokio::task::block_in_place(|| {
+                            tokio::runtime::Handle::current().block_on(async {
+                                SurrealMemoryStore::new(surreal_config).await.unwrap()
+                            })
+                        });
                         let memory_manager = std::sync::Arc::new(crate::memory::MemoryManager::new(memory_store));
                         Box::new(crate::tools::retrieve_context::RetrieveContextTool { memory_manager }) as Box<dyn AiTool>
                     },
                     "block" => {
                         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap_or_default();
-                        let memory_store = crate::memory::FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(crate::memory::MemoryManager::new(memory_store));
                         Box::new(crate::tools::block::BlockTool { memory_manager }) as Box<dyn AiTool>
                     },
                     "update_block" => {
                         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap_or_default();
-                        let memory_store = crate::memory::FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(crate::memory::MemoryManager::new(memory_store));
                         Box::new(crate::tools::update_block::UpdateBlockTool { memory_manager }) as Box<dyn AiTool>
                     },
                     "delete_block" => {
                         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
                         std::fs::create_dir_all(&agent_data_dir).unwrap_or_default();
-                        let memory_store = crate::memory::FjallMemoryStore::new(&agent_data_dir).unwrap();
+                        let memory_store = {
+                            let surreal_config = SurrealConfig::File {
+                                path: std::path::PathBuf::from(&agent_data_dir).join("memory.db"),
+                                namespace: "luts".to_string(),
+                                database: "memory".to_string(),
+                            };
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(async {
+                                    SurrealMemoryStore::new(surreal_config).await.unwrap()
+                                })
+                            })
+                        };
                         let memory_manager = std::sync::Arc::new(crate::memory::MemoryManager::new(memory_store));
                         Box::new(crate::tools::delete_block::DeleteBlockTool { memory_manager }) as Box<dyn AiTool>
+                    },
+                    "modify_core_block" => {
+                        Box::new(ModifyCoreBlockTool::new(config.agent_id.clone(), None)) as Box<dyn AiTool>
                     },
                     _ => {
                         tracing::warn!("Unknown tool type: {}, using dummy tool", name);
@@ -99,7 +144,18 @@ impl BaseAgent {
         
         // Create memory manager with agent-specific data directory
         let agent_data_dir = format!("{}/agents/{}", config.data_dir, config.agent_id);
-        let memory_store = FjallMemoryStore::new(&agent_data_dir)?;
+        std::fs::create_dir_all(&agent_data_dir)
+            .map_err(|e| anyhow!("Failed to create agent data directory: {}", e))?;
+        let surreal_config = SurrealConfig::File {
+            path: std::path::PathBuf::from(agent_data_dir).join("memory.db"),
+            namespace: "luts".to_string(),
+            database: "memory".to_string(),
+        };
+        let memory_store = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                SurrealMemoryStore::new(surreal_config).await
+            })
+        })?;
         let memory_manager = MemoryManager::new(memory_store);
         
         Ok(BaseAgent {

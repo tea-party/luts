@@ -23,11 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **When finishing work:**
 1. Ensure both the TodoWrite tool and this CLAUDE.md file have the same final state
 2. This ensures the next session can start with the correct TODO status
+3. Lint and check the files you've worked on.
 
 ### Current TODO List
 
-## Epic Features Progress (Last updated: 2025-01-06)
-### Priority Features
 - [x] **Token Usage Tracking & Management** (HIGH)
   _Comprehensive token tracking, budgeting, analytics_
 - [x] **Conversation Summarization** (HIGH)
@@ -52,6 +51,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   _Models explain tool usage with reasoning and final responses_
 - [x] **Ensure Final Responses** (HIGH)
   _System prompts and mechanisms to guarantee responses after tool use_
+- [x] **Fix Tool Calling in TUI Streaming** (HIGH)
+  _Fixed tool execution in streaming responses - tools now actually run and return results_
+- [x] **Create Streaming Test Mode** (HIGH)
+  _Comprehensive CLI test suite for streaming, tool calling, and error handling_
+- [x] **Clean Up and Simplify Core Module** (HIGH)
+  _Reorganized luts-core into logical modules: conversation/, streaming/, utils/, context/_
+- [x] **Design Essential 'Core' Context Blocks** (HIGH)
+  _Implemented 8 core block types: SystemPrompt, UserPersona, TaskContext, KeyFacts, etc._
+- [x] **Context Window Manager (Letta-style)** (HIGH)
+  _Complete context window management with dynamic memory selection and token budgeting_
+- [x] **Fix Agent Tool Availability** (HIGH)
+  _Agents can now access real tools including modify_core_block_
+- [x] **Fix TUI Message Display** (HIGH)
+  _Messages now properly scroll and wrap without disappearing_
+- [x] **SurrealDB Foundation - Add dependencies and config** (HIGH)
+  _Added SurrealDB to Cargo.toml with embedded kv-surrealkv feature_
+- [x] **SurrealDB Data Model & Schema Design** (HIGH)
+  _Created enhanced MemoryStore trait and SurrealDB schema with relationships_
+- [x] **SurrealDB Core Implementation - Basic CRUD** (HIGH)
+  _Implemented store/retrieve/update/delete with proper JSON serialization_
+- [x] **Fix SurrealDB Thing Type Serialization Issues** (HIGH)
+  _Fixed enum serialization issues following GitHub issue #4921 - using string-based approach instead of direct struct serialization to avoid SurrealDB 2.x enum bugs_
+- [x] **Update Memory Manager to Use SurrealDB** (HIGH)
+  _Switched all applications (API, TUI, Agents) from FjallMemoryStore to SurrealMemoryStore - complete migration to SurrealDB backend_
+- [ ] **Implement automatic embedding generation for memory blocks** (HIGH)
+  _Add vector embeddings using SurrealDB vector functions_
+- [ ] **Add vector similarity search with SurrealDB** (HIGH)
+  _Implement semantic search using SurrealDB vector capabilities_
+- [ ] **Create semantic search tools for agents** (HIGH)
+  _Build agent tools that leverage vector similarity search_
+- [ ] **Update memory manager to use SurrealDB** (HIGH)
+  _Switch MemoryManager from Fjall to SurrealDB backend_
+- [ ] **Update context viewer for SurrealDB** (HIGH)
+  _Modify TUI memory blocks viewer to work with SurrealDB_
+- [ ] **Update all agent tools to work with SurrealDB** (HIGH)
+  _Ensure retrieve_context and other tools work with new backend_
+- [ ] **Remove Fjall dependencies and clean up old code** (MEDIUM)
+  _Phase out Fjall completely in favor of SurrealDB_
+- [ ] **Implement LIVE SELECT subscriptions for real-time updates** (MEDIUM)
+  _Add real-time context updates using SurrealDB live queries_
+- [ ] **Add full-text search with SurrealDB search indexes** (MEDIUM)
+  _Implement advanced text search capabilities_
 - [ ] **Create Conversation Templates** (MEDIUM)
   _Reusable conversation starters and formats_
 - [ ] **Implement Conversation Analytics Dashboard** (LOW)
@@ -156,6 +197,11 @@ luts-tui --list-agents               # List available personality agents
 luts-tui --agent researcher          # Start TUI with specific agent
 luts-tui --data-dir ./data --provider gemini-2.5-pro  # With custom settings
 
+# Run TUI streaming test mode (for testing streaming, tool calls, etc.)
+luts-tui --test-streaming            # Interactive test mode
+luts-tui --list-test-scenarios       # List available test scenarios
+luts-tui --test-streaming --test-scenario calculator  # Run specific test
+
 # Run API server
 luts-api --host 127.0.0.1 --port 3000 --data-dir ./data --provider DeepSeek-R1-0528
 ```
@@ -179,6 +225,41 @@ luts -a researcher
 
 # Switch agents during conversation with /switch command
 ```
+
+### Streaming Test Mode (TUI)
+The TUI includes a comprehensive streaming test mode for testing streaming responses, tool calling, and error handling:
+
+**Available Test Scenarios:**
+- **Basic Streaming** - Test text streaming without tools
+- **Calculator Tool** - Test mathematical tool calls
+- **Web Search Tool** - Test web search functionality
+- **Multiple Tools** - Test sequential tool usage
+- **Error Handling** - Test tool error recovery
+- **Stress Test** - High-volume tool calling
+
+**Usage:**
+```bash
+# Interactive test mode (recommended)
+luts-tui --test-streaming
+
+# List all available test scenarios
+luts-tui --list-test-scenarios
+
+# Run specific test scenario
+luts-tui --test-streaming --test-scenario calculator
+luts-tui --test-streaming --test-scenario web-search
+
+# Run all tests in sequence
+luts-tui --test-streaming  # then select 'a' for all
+```
+
+**Features:**
+- 🎯 **Targeted Testing** - Each scenario tests specific functionality
+- 📊 **Real-time Metrics** - Duration, chunk count, tool usage stats
+- 🎨 **Color-coded Output** - Visual indicators for success/failure/progress
+- 🔧 **Tool Execution** - Actually runs tools and displays results
+- ⚡ **Streaming Display** - Shows real-time response streaming
+- 🚨 **Error Testing** - Validates error handling and recovery
 
 ### Development Tools
 ```bash

@@ -12,7 +12,14 @@
       "Bash(cargo clippy:*)",
       "Bash(find:*)",
       "WebFetch(domain:docs.rs)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(mv:*)",
+      "Bash(cargo search:*)",
+      "Bash(cargo info:*)",
+      "Bash(RUST_LOG=debug cargo test -p luts-core --lib memory::surreal::tests::test_store_and_retrieve -- --nocapture)",
+      "Bash(RUST_BACKTRACE=1 cargo test -p luts-core test_store_and_retrieve)",
+      "Bash(RUST_BACKTRACE=1 cargo test test_store_and_retrieve -p luts-core)",
+      "Bash(RUST_BACKTRACE=1 cargo test -p luts-core memory::surreal::tests::test_relationships --lib -- --nocapture)"
     ],
     "deny": []
   }

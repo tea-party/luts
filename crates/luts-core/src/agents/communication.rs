@@ -4,6 +4,25 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+/// Information about a tool call that was executed
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolCallInfo {
+    /// Name of the tool that was called
+    pub tool_name: String,
+    
+    /// Arguments passed to the tool
+    pub tool_args: Value,
+    
+    /// Result returned by the tool
+    pub tool_result: String,
+    
+    /// Whether the tool call was successful
+    pub success: bool,
+    
+    /// Call ID (if applicable)
+    pub call_id: Option<String>,
+}
+
 /// A message sent between agents
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentMessage {
@@ -43,6 +62,9 @@ pub struct MessageResponse {
     
     /// Optional structured response data
     pub data: Option<Value>,
+    
+    /// Tool calls that were executed during processing
+    pub tool_calls: Vec<ToolCallInfo>,
     
     /// Whether the operation was successful
     pub success: bool,
@@ -121,6 +143,25 @@ impl MessageResponse {
             in_response_to,
             content,
             data,
+            tool_calls: Vec::new(),
+            success: true,
+            error: None,
+            timestamp: chrono::Utc::now().timestamp(),
+        }
+    }
+    
+    /// Create a successful response with tool calls
+    pub fn success_with_tools(
+        in_response_to: String,
+        content: String,
+        data: Option<Value>,
+        tool_calls: Vec<ToolCallInfo>,
+    ) -> Self {
+        Self {
+            in_response_to,
+            content,
+            data,
+            tool_calls,
             success: true,
             error: None,
             timestamp: chrono::Utc::now().timestamp(),
@@ -136,6 +177,7 @@ impl MessageResponse {
             in_response_to,
             content: String::new(),
             data: None,
+            tool_calls: Vec::new(),
             success: false,
             error: Some(error_message),
             timestamp: chrono::Utc::now().timestamp(),

@@ -1,7 +1,19 @@
-mod fjall_provider;
 mod redis_provider;
+pub mod saving;
+pub mod core_blocks;
+pub mod window_manager;
 
-pub use fjall_provider::FjallContextProvider;
+pub use saving::{
+    ContextManager as ContextSavingManager, ContextSaveConfig, ContextSnapshot,
+    ContextStorageStats, RestoredContext, SnapshotQuery,
+};
+pub use core_blocks::{
+    CoreBlock, CoreBlockManager, CoreBlockType, CoreBlockConfig, CoreBlockStats,
+};
+pub use window_manager::{
+    ContextWindowManager, ContextWindowConfig, ContextWindow, ContextWindowStats,
+    SelectionStrategy, TokenBreakdown, ContextMemoryBlock,
+};
 // Commented out until implementation is ready
 // pub use redis_provider::RedisContextProvider;
 

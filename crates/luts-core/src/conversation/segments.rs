@@ -5,7 +5,7 @@
 
 use crate::llm::InternalChatMessage;
 use crate::memory::{MemoryBlock, MemoryManager};
-use crate::conversation_export::{ExportableMessage, MessageType};
+use crate::conversation::export::{ExportableMessage, MessageType};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

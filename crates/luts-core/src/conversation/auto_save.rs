@@ -3,10 +3,10 @@
 //! This module provides comprehensive auto-save capabilities including conversation state,
 //! configuration changes, user preferences, and periodic backups with conflict resolution.
 
-use crate::conversation_export::ExportableConversation;
+use crate::conversation::export::ExportableConversation;
 use crate::llm::InternalChatMessage;
 use crate::memory::{MemoryBlock, MemoryManager};
-use crate::token_manager::TokenUsage;
+use crate::utils::tokens::TokenUsage;
 use anyhow::Result;
 use chrono::{DateTime, Utc, Duration, Timelike};
 use serde::{Deserialize, Serialize};

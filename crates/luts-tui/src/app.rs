@@ -4,6 +4,7 @@ use crate::{
     agent_selector::AgentSelector,
     block_mode::BlockMode,
     config_manager::ConfigManager,
+    context_viewer::ContextViewer,
     conversation::Conversation,
     events::{AppEvent, EventHandler, handle_key_event},
     log_viewer::{LogViewer, LogBuffer, LogBufferLayer},
@@ -23,6 +24,7 @@ enum AppState {
     AgentSelection,
     Conversation,
     BlockMode,
+    ContextViewer,
     ToolActivity,
     LogViewer,
     Config,
@@ -34,6 +36,7 @@ pub struct App {
     agent_selector: AgentSelector,
     conversation: Conversation,
     block_mode: BlockMode,
+    context_viewer: Option<ContextViewer>,
     tool_activity: ToolActivityPanel,
     log_viewer: LogViewer,
     config_manager: Option<ConfigManager>,
@@ -81,6 +84,7 @@ impl App {
             agent_selector: AgentSelector::new(event_sender.clone()),
             conversation,
             block_mode: BlockMode::new(event_sender.clone()),
+            context_viewer: None, // Initialize lazily when needed
             tool_activity: ToolActivityPanel::new(event_sender.clone()),
             log_viewer: LogViewer::new(log_buffer.clone()),
             config_manager: None,
@@ -189,6 +193,58 @@ impl App {
                                         .contains(crossterm::event::KeyModifiers::CONTROL)
                                 {
                                     self.state = AppState::LogViewer;
+                                } else if matches!(key.code, crossterm::event::KeyCode::Char('w'))
+                                    && key
+                                        .modifiers
+                                        .contains(crossterm::event::KeyModifiers::CONTROL)
+                                {
+                                    // Initialize context viewer if needed
+                                    if self.context_viewer.is_none() {
+                                        match ContextViewer::new(self.event_handler.sender()) {
+                                            Ok(mut viewer) => {
+                                                // Initialize with proper data directory
+                                                if let Err(e) = viewer.initialize_with_data_dir(&self.data_dir) {
+                                                    error!("Failed to initialize context viewer with data dir: {}", e);
+                                                    // Continue anyway with default setup
+                                                }
+                                                
+                                                // Pass agent and LLM service to context viewer
+                                                if let Some(agent) = self.conversation.agent() {
+                                                    viewer.set_agent(agent);
+                                                }
+                                                if let Some(llm_service) = self.conversation.llm_service() {
+                                                    viewer.set_llm_service(llm_service);
+                                                }
+                                                // Pass current conversation history
+                                                let conversation_messages = self.conversation.get_message_history();
+                                                viewer.update_conversation_history(conversation_messages);
+                                                
+                                                self.context_viewer = Some(viewer);
+                                                self.state = AppState::ContextViewer;
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to initialize context viewer: {}", e);
+                                            }
+                                        }
+                                    } else {
+                                        // Update existing context viewer with current data
+                                        if let Some(viewer) = &mut self.context_viewer {
+                                            // Re-initialize with proper data directory if needed
+                                            if let Err(e) = viewer.initialize_with_data_dir(&self.data_dir) {
+                                                error!("Failed to re-initialize context viewer with data dir: {}", e);
+                                            }
+                                            
+                                            if let Some(agent) = self.conversation.agent() {
+                                                viewer.set_agent(agent);
+                                            }
+                                            if let Some(llm_service) = self.conversation.llm_service() {
+                                                viewer.set_llm_service(llm_service);
+                                            }
+                                            let conversation_messages = self.conversation.get_message_history();
+                                            viewer.update_conversation_history(conversation_messages);
+                                        }
+                                        self.state = AppState::ContextViewer;
+                                    }
                                 } else if matches!(key.code, crossterm::event::KeyCode::F(2))
                                 {
                                     if self.config_manager.is_none() {
@@ -345,6 +401,58 @@ impl App {
                                     config_manager.handle_key_event(key)?;
                                 }
                             }
+                            AppState::ContextViewer => {
+                                // Auto-refresh context data when first entering context viewer
+                                if let Some(context_viewer) = &mut self.context_viewer {
+                                    if context_viewer.needs_refresh() {
+                                        // Trigger a refresh on F5 key - user can manually refresh
+                                        info!("Context viewer needs refresh - press F5 to refresh data");
+                                    }
+                                }
+                                
+                                // Check for back to agent selection
+                                if matches!(key.code, crossterm::event::KeyCode::Char('q'))
+                                    && key
+                                        .modifiers
+                                        .contains(crossterm::event::KeyModifiers::CONTROL)
+                                {
+                                    self.state = AppState::AgentSelection;
+                                } else if matches!(key.code, crossterm::event::KeyCode::Esc) {
+                                    self.state = AppState::Conversation;
+                                } else if matches!(key.code, crossterm::event::KeyCode::Char('b'))
+                                    && key
+                                        .modifiers
+                                        .contains(crossterm::event::KeyModifiers::CONTROL)
+                                {
+                                    self.state = AppState::BlockMode;
+                                } else if matches!(key.code, crossterm::event::KeyCode::Char('t'))
+                                    && key
+                                        .modifiers
+                                        .contains(crossterm::event::KeyModifiers::CONTROL)
+                                {
+                                    self.state = AppState::ToolActivity;
+                                } else if matches!(key.code, crossterm::event::KeyCode::F(2))
+                                {
+                                    if self.config_manager.is_none() {
+                                        match ConfigManager::new(self.event_handler.sender()) {
+                                            Ok(config_manager) => {
+                                                self.config_manager = Some(config_manager);
+                                                self.state = AppState::Config;
+                                            }
+                                            Err(e) => {
+                                                error!(
+                                                    "Failed to initialize config manager: {}",
+                                                    e
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        self.state = AppState::Config;
+                                    }
+                                } else if let Some(context_viewer) = &mut self.context_viewer {
+                                    context_viewer.handle_key_event(key).await?;
+                                }
+                            }
                             AppState::Quitting => break,
                         }
                     }
@@ -383,7 +491,7 @@ impl App {
                 
                 AppEvent::AgentResponseReceived(response) => {
                     self.needs_redraw = true;
-                    debug!("Agent response received");
+                    debug!("Agent response received with {} tool calls", response.tool_calls.len());
                     if let Err(e) = self.conversation.handle_agent_response(response).await {
                         error!("Failed to handle agent response: {}", e);
                     }
@@ -464,6 +572,11 @@ impl App {
                         AppState::ToolActivity => {
                             self.tool_activity.handle_mouse_event(mouse)?;
                         }
+                        AppState::ContextViewer => {
+                            if let Some(context_viewer) = &mut self.context_viewer {
+                                context_viewer.handle_mouse_event(mouse)?;
+                            }
+                        }
                         AppState::LogViewer => {
                             // Log viewer doesn't need mouse handling for now
                         }
@@ -502,6 +615,11 @@ impl App {
                         }
                         AppState::ToolActivity => {
                             self.tool_activity.render(frame);
+                        }
+                        AppState::ContextViewer => {
+                            if let Some(context_viewer) = &mut self.context_viewer {
+                                context_viewer.render(frame);
+                            }
                         }
                         AppState::LogViewer => {
                             self.log_viewer.render(frame, frame.area());

@@ -3,10 +3,10 @@
 //! This module provides comprehensive conversation export/import capabilities,
 //! supporting multiple formats with metadata preservation and format conversion.
 
+use crate::conversation::summarization::ConversationSummary;
 use crate::llm::InternalChatMessage;
 use crate::memory::{MemoryBlock, MemoryManager, MemoryQuery};
-use crate::summarization::ConversationSummary;
-use crate::token_manager::{TokenUsage, TokenManager, UsageFilter};
+use crate::utils::tokens::{TokenManager, TokenUsage, UsageFilter};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Represents a complete conversation for export/import
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -362,14 +362,20 @@ impl ConversationExporter {
         format: ExportFormat,
         settings: ExportSettings,
     ) -> Result<ExportInfo> {
-        info!("Exporting conversation {} to {:?} format", metadata.id, format);
+        info!(
+            "Exporting conversation {} to {:?} format",
+            metadata.id, format
+        );
 
         // Convert internal messages to exportable format
-        let exportable_messages = self.convert_messages_to_exportable(messages, &settings).await?;
+        let exportable_messages = self
+            .convert_messages_to_exportable(messages, &settings)
+            .await?;
 
         // Collect additional data based on settings
         let memory_blocks = if settings.include_memory_blocks {
-            self.collect_memory_blocks(&metadata.user_id, &metadata.session_id).await?
+            self.collect_memory_blocks(&metadata.user_id, &metadata.session_id)
+                .await?
         } else {
             Vec::new()
         };
@@ -382,7 +388,8 @@ impl ConversationExporter {
         };
 
         let token_usage = if settings.include_token_usage {
-            self.collect_token_usage(&metadata.user_id, &metadata.session_id).await?
+            self.collect_token_usage(&metadata.user_id, &metadata.session_id)
+                .await?
         } else {
             Vec::new()
         };
@@ -407,7 +414,8 @@ impl ConversationExporter {
         };
 
         // Export to the specified format
-        self.write_export(&exportable_conversation, output_path, &format, &settings).await?;
+        self.write_export(&exportable_conversation, output_path, &format, &settings)
+            .await?;
 
         info!("Successfully exported conversation to {:?}", output_path);
         Ok(export_info)
@@ -420,7 +428,10 @@ impl ConversationExporter {
         format: ExportFormat,
         settings: ImportSettings,
     ) -> Result<(ExportableConversation, ImportInfo)> {
-        info!("Importing conversation from {:?} (format: {:?})", input_path, format);
+        info!(
+            "Importing conversation from {:?} (format: {:?})",
+            input_path, format
+        );
 
         let content = tokio::fs::read_to_string(input_path).await?;
         let mut conversation = self.parse_import(&content, &format).await?;
@@ -431,7 +442,11 @@ impl ConversationExporter {
 
         // Apply import settings
         if settings.auto_assign_ids {
-            conversation.metadata.id = format!("imported_{}_{}", Utc::now().timestamp(), uuid::Uuid::new_v4().to_string()[..8].to_string());
+            conversation.metadata.id = format!(
+                "imported_{}_{}",
+                Utc::now().timestamp(),
+                uuid::Uuid::new_v4().to_string()[..8].to_string()
+            );
             for (i, message) in conversation.messages.iter_mut().enumerate() {
                 message.id = format!("msg_{}_{}", conversation.metadata.id, i);
             }
@@ -462,8 +477,10 @@ impl ConversationExporter {
             success: true,
         };
 
-        info!("Successfully imported conversation: {} messages, {} memory blocks", 
-               messages_imported, memory_blocks_imported);
+        info!(
+            "Successfully imported conversation: {} messages, {} memory blocks",
+            messages_imported, memory_blocks_imported
+        );
 
         Ok((conversation, import_info))
     }
@@ -478,17 +495,21 @@ impl ConversationExporter {
 
         for (i, message) in messages.into_iter().enumerate() {
             let (message_type, content, author) = match message {
-                InternalChatMessage::User { content } => (MessageType::User, content, "User".to_string()),
-                InternalChatMessage::Assistant { content, .. } => (MessageType::Assistant, content, "Assistant".to_string()),
+                InternalChatMessage::User { content } => {
+                    (MessageType::User, content, "User".to_string())
+                }
+                InternalChatMessage::Assistant { content, .. } => {
+                    (MessageType::Assistant, content, "Assistant".to_string())
+                }
                 InternalChatMessage::System { content } => {
                     if !settings.include_system_messages {
                         continue;
                     }
                     (MessageType::System, content, "System".to_string())
                 }
-                InternalChatMessage::Tool { tool_name, content, .. } => {
-                    (MessageType::Tool, content, format!("Tool({})", tool_name))
-                }
+                InternalChatMessage::Tool {
+                    tool_name, content, ..
+                } => (MessageType::Tool, content, format!("Tool({})", tool_name)),
             };
 
             // Apply message type filter
@@ -525,7 +546,11 @@ impl ConversationExporter {
     }
 
     /// Collect memory blocks for the conversation
-    async fn collect_memory_blocks(&self, user_id: &str, session_id: &str) -> Result<Vec<MemoryBlock>> {
+    async fn collect_memory_blocks(
+        &self,
+        user_id: &str,
+        session_id: &str,
+    ) -> Result<Vec<MemoryBlock>> {
         if let Some(memory_manager) = &self.memory_manager {
             let query = MemoryQuery {
                 user_id: Some(user_id.to_string()),
@@ -539,7 +564,11 @@ impl ConversationExporter {
     }
 
     /// Collect token usage data for the conversation
-    async fn collect_token_usage(&self, user_id: &str, session_id: &str) -> Result<Vec<TokenUsage>> {
+    async fn collect_token_usage(
+        &self,
+        user_id: &str,
+        session_id: &str,
+    ) -> Result<Vec<TokenUsage>> {
         if let Some(token_manager) = &self.token_manager {
             let filter = UsageFilter {
                 user_id: Some(user_id.to_string()),
@@ -608,20 +637,19 @@ impl ConversationExporter {
     }
 
     /// Parse imported conversation from string content
-    async fn parse_import(&self, content: &str, format: &ExportFormat) -> Result<ExportableConversation> {
+    async fn parse_import(
+        &self,
+        content: &str,
+        format: &ExportFormat,
+    ) -> Result<ExportableConversation> {
         match format {
-            ExportFormat::Json => {
-                Ok(serde_json::from_str(content)?)
-            }
-            ExportFormat::Yaml => {
-                Ok(serde_yaml::from_str(content)?)
-            }
-            ExportFormat::Jsonl => {
-                self.parse_jsonl(content)
-            }
-            _ => {
-                Err(anyhow::anyhow!("Import not yet supported for format: {:?}", format))
-            }
+            ExportFormat::Json => Ok(serde_json::from_str(content)?),
+            ExportFormat::Yaml => Ok(serde_yaml::from_str(content)?),
+            ExportFormat::Jsonl => self.parse_jsonl(content),
+            _ => Err(anyhow::anyhow!(
+                "Import not yet supported for format: {:?}",
+                format
+            )),
         }
     }
 
@@ -631,8 +659,15 @@ impl ConversationExporter {
         csv.push_str("timestamp,author,type,content,token_count,importance\n");
 
         for message in &conversation.messages {
-            let content_escaped = message.content.replace('"', "\"\"").replace('\n', " ").replace('\r', " ");
-            let token_count = message.metadata.token_count.map_or("".to_string(), |c| c.to_string());
+            let content_escaped = message
+                .content
+                .replace('"', "\"\"")
+                .replace('\n', " ")
+                .replace('\r', " ");
+            let token_count = message
+                .metadata
+                .token_count
+                .map_or("".to_string(), |c| c.to_string());
             let importance = format!("{:?}", message.metadata.importance);
 
             csv.push_str(&format!(
@@ -654,17 +689,32 @@ impl ConversationExporter {
         let mut markdown = String::new();
 
         markdown.push_str(&format!("# {}\n\n", conversation.metadata.title));
-        markdown.push_str(&format!("**Started:** {}\n", conversation.metadata.started_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        markdown.push_str(&format!(
+            "**Started:** {}\n",
+            conversation
+                .metadata
+                .started_at
+                .format("%Y-%m-%d %H:%M:%S UTC")
+        ));
         markdown.push_str(&format!("**User:** {}\n", conversation.metadata.user_id));
-        markdown.push_str(&format!("**Session:** {}\n", conversation.metadata.session_id));
-        markdown.push_str(&format!("**Messages:** {}\n\n", conversation.metadata.message_count));
+        markdown.push_str(&format!(
+            "**Session:** {}\n",
+            conversation.metadata.session_id
+        ));
+        markdown.push_str(&format!(
+            "**Messages:** {}\n\n",
+            conversation.metadata.message_count
+        ));
 
         if let Some(ref description) = conversation.metadata.description {
             markdown.push_str(&format!("**Description:** {}\n\n", description));
         }
 
         if !conversation.metadata.tags.is_empty() {
-            markdown.push_str(&format!("**Tags:** {}\n\n", conversation.metadata.tags.join(", ")));
+            markdown.push_str(&format!(
+                "**Tags:** {}\n\n",
+                conversation.metadata.tags.join(", ")
+            ));
         }
 
         markdown.push_str("## Conversation\n\n");
@@ -689,11 +739,17 @@ impl ConversationExporter {
         }
 
         if !conversation.memory_blocks.is_empty() {
-            markdown.push_str(&format!("## Memory Blocks ({})\n\n", conversation.memory_blocks.len()));
+            markdown.push_str(&format!(
+                "## Memory Blocks ({})\n\n",
+                conversation.memory_blocks.len()
+            ));
         }
 
         if !conversation.summaries.is_empty() {
-            markdown.push_str(&format!("## Summaries ({})\n\n", conversation.summaries.len()));
+            markdown.push_str(&format!(
+                "## Summaries ({})\n\n",
+                conversation.summaries.len()
+            ));
         }
 
         markdown
@@ -714,9 +770,17 @@ impl ConversationExporter {
         html.push_str("</style>\n</head>\n<body>\n");
 
         html.push_str(&format!("<h1>{}</h1>\n", conversation.metadata.title));
-        html.push_str(&format!("<p><strong>Started:</strong> {}</p>\n", 
-                              conversation.metadata.started_at.format("%Y-%m-%d %H:%M:%S UTC")));
-        html.push_str(&format!("<p><strong>Messages:</strong> {}</p>\n", conversation.metadata.message_count));
+        html.push_str(&format!(
+            "<p><strong>Started:</strong> {}</p>\n",
+            conversation
+                .metadata
+                .started_at
+                .format("%Y-%m-%d %H:%M:%S UTC")
+        ));
+        html.push_str(&format!(
+            "<p><strong>Messages:</strong> {}</p>\n",
+            conversation.metadata.message_count
+        ));
 
         for message in &conversation.messages {
             let class = match message.message_type {
@@ -745,8 +809,17 @@ impl ConversationExporter {
         let mut text = String::new();
 
         text.push_str(&format!("{}\n", conversation.metadata.title));
-        text.push_str(&format!("Started: {}\n", conversation.metadata.started_at.format("%Y-%m-%d %H:%M:%S UTC")));
-        text.push_str(&format!("Messages: {}\n\n", conversation.metadata.message_count));
+        text.push_str(&format!(
+            "Started: {}\n",
+            conversation
+                .metadata
+                .started_at
+                .format("%Y-%m-%d %H:%M:%S UTC")
+        ));
+        text.push_str(&format!(
+            "Messages: {}\n\n",
+            conversation.metadata.message_count
+        ));
 
         text.push_str(&"=".repeat(80));
         text.push('\n');
@@ -769,10 +842,19 @@ impl ConversationExporter {
 
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.push_str("<conversation>\n");
-        xml.push_str(&format!("  <title>{}</title>\n", conversation.metadata.title));
+        xml.push_str(&format!(
+            "  <title>{}</title>\n",
+            conversation.metadata.title
+        ));
         xml.push_str(&format!("  <id>{}</id>\n", conversation.metadata.id));
-        xml.push_str(&format!("  <user_id>{}</user_id>\n", conversation.metadata.user_id));
-        xml.push_str(&format!("  <started_at>{}</started_at>\n", conversation.metadata.started_at.to_rfc3339()));
+        xml.push_str(&format!(
+            "  <user_id>{}</user_id>\n",
+            conversation.metadata.user_id
+        ));
+        xml.push_str(&format!(
+            "  <started_at>{}</started_at>\n",
+            conversation.metadata.started_at.to_rfc3339()
+        ));
 
         xml.push_str("  <messages>\n");
         for message in &conversation.messages {
@@ -780,8 +862,14 @@ impl ConversationExporter {
             xml.push_str(&format!("      <id>{}</id>\n", message.id));
             xml.push_str(&format!("      <type>{:?}</type>\n", message.message_type));
             xml.push_str(&format!("      <author>{}</author>\n", message.author));
-            xml.push_str(&format!("      <timestamp>{}</timestamp>\n", message.timestamp.to_rfc3339()));
-            xml.push_str(&format!("      <content><![CDATA[{}]]></content>\n", message.content));
+            xml.push_str(&format!(
+                "      <timestamp>{}</timestamp>\n",
+                message.timestamp.to_rfc3339()
+            ));
+            xml.push_str(&format!(
+                "      <content><![CDATA[{}]]></content>\n",
+                message.content
+            ));
             xml.push_str("    </message>\n");
         }
         xml.push_str("  </messages>\n");
@@ -852,7 +940,10 @@ impl ConversationExporter {
     }
 
     /// Validate imported conversation data
-    async fn validate_conversation_data(&self, conversation: &ExportableConversation) -> Vec<String> {
+    async fn validate_conversation_data(
+        &self,
+        conversation: &ExportableConversation,
+    ) -> Vec<String> {
         let mut warnings = Vec::new();
 
         // Check for empty conversation

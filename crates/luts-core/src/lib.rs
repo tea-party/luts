@@ -7,37 +7,46 @@
 //! - Multiagent system support
 
 pub mod agents;
-pub mod auto_save;
-pub mod block_utils;
 pub mod context;
-pub mod context_saving;
-pub mod conversation_bookmarks;
-pub mod conversation_export;
-pub mod conversation_search;
+pub mod conversation;
 pub mod memory;
-pub mod segment_editor;
-pub mod response_streaming;
+pub mod streaming;
 pub mod tools;
-pub mod token_manager;
-pub mod summarization;
+pub mod utils;
 
 // Re-export key types for convenience
-pub use agents::{Agent, AgentConfig, AgentRegistry, BaseAgent, AgentMessage, MessageResponse, PersonalityAgentBuilder};
-pub use context::{ContextManager, ContextProvider, FjallContextProvider};
+pub use agents::{
+    Agent, AgentConfig, AgentMessage, AgentRegistry, BaseAgent, MessageResponse,
+    PersonalityAgentBuilder,
+};
+pub use context::{
+    ContextManager, ContextProvider, ContextSaveConfig, ContextSavingManager, ContextSnapshot,
+    ContextStorageStats, RestoredContext, SnapshotQuery,
+    CoreBlock, CoreBlockManager, CoreBlockType, CoreBlockConfig, CoreBlockStats,
+    ContextWindowManager, ContextWindowConfig, ContextWindow, ContextWindowStats,
+    SelectionStrategy, TokenBreakdown, ContextMemoryBlock,
+};
+pub use conversation::{
+    AutoSaveConfig, AutoSaveData, AutoSaveManager, AutoSaveState, AutoSaveStats, AutoSaveType,
+    BatchEditOperation, BookmarkCollection, BookmarkColor, BookmarkManager, BookmarkPriority,
+    BookmarkQuery, BookmarkStats, ConversationBookmark, ConversationExporter, ConversationMetadata,
+    ConversationSearchEngine, ConversationSearchQuery, ConversationSearchResult,
+    ConversationSegment, ConversationSegmentEditor, ConversationSummarizer, ConversationSummary,
+    EditType, ExportFormat, ExportSettings, ExportableConversation, ExportableMessage,
+    ImportSettings, ImportanceLevel, QuickAccessBookmark, SavedSearch, SearchAnalytics,
+    SearchFilters, SegmentEdit, SegmentType, SummarizationAnalytics, SummarizationConfig,
+    SummarizationStrategy, UndoRedoOperation,
+};
 pub use memory::{
-    BlockId, BlockType, FjallMemoryStore, MemoryBlock, MemoryBlockBuilder, MemoryContent,
+    BlockId, BlockType, MemoryBlock, MemoryBlockBuilder, MemoryContent,
     MemoryManager, MemoryQuery, MemoryStore, QuerySort, TimeRange,
 };
+pub use streaming::{
+    ChunkType, ResponseChunk, ResponseStreamManager, StreamConfig, StreamEvent, StreamableResponse,
+    StreamingResponseBuilder, TypingIndicator, TypingStatus,
+};
 pub use tools::AiTool;
-pub use token_manager::{TokenManager, TokenUsage, TokenBudget, TokenAnalytics, BudgetStatus};
-pub use summarization::{ConversationSummarizer, ConversationSummary, SummarizationConfig, SummarizationStrategy, SummarizationAnalytics};
-pub use context_saving::{ContextManager as ContextSavingManager, ContextSnapshot, ContextSaveConfig, RestoredContext, SnapshotQuery, ContextStorageStats};
-pub use conversation_export::{ConversationExporter, ExportableConversation, ExportFormat, ExportSettings, ImportSettings, ConversationMetadata, ExportableMessage};
-pub use conversation_search::{ConversationSearchEngine, ConversationSearchQuery, SearchFilters, ConversationSearchResult, SavedSearch, SearchAnalytics};
-pub use conversation_bookmarks::{BookmarkManager, ConversationBookmark, BookmarkCollection, BookmarkQuery, BookmarkStats, QuickAccessBookmark, BookmarkPriority, BookmarkColor};
-pub use auto_save::{AutoSaveManager, AutoSaveConfig, AutoSaveState, AutoSaveData, AutoSaveType, AutoSaveStats};
-pub use segment_editor::{ConversationSegmentEditor, ConversationSegment, SegmentType, SegmentEdit, EditType, ImportanceLevel, BatchEditOperation, UndoRedoOperation};
-pub use response_streaming::{ResponseStreamManager, ResponseChunk, ChunkType, TypingIndicator, TypingStatus, StreamConfig, StreamEvent, StreamableResponse, StreamingResponseBuilder};
+pub use utils::{BlockUtils, BudgetStatus, TokenAnalytics, TokenBudget, TokenManager, TokenUsage};
 
 /// The LLM service for interacting with AI models
 pub mod llm;
