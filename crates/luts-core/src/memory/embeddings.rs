@@ -6,7 +6,6 @@
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, warn};
 
@@ -188,7 +187,7 @@ impl EmbeddingService for LocalEmbeddingService {
         warn!("Local embedding service not yet implemented, returning mock embedding");
         let mut embedding = vec![0.0; self.config.dimensions];
         // Simple hash-based mock embedding
-        let hash = std::collections::hash_map::DefaultHasher::new();
+        let _hash = std::collections::hash_map::DefaultHasher::new();
         for (i, value) in embedding.iter_mut().enumerate() {
             *value = ((i * 7) % 100) as f32 / 100.0;
         }

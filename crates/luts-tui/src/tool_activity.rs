@@ -45,6 +45,7 @@ pub enum ToolCallStatus {
 }
 
 impl ToolCallEntry {
+    #[allow(dead_code)]
     pub fn new(tool_name: String, arguments: String, agent_name: String) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -63,16 +64,19 @@ impl ToolCallEntry {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_in_progress(&mut self) {
         self.status = ToolCallStatus::InProgress;
     }
 
+    #[allow(dead_code)]
     pub fn set_completed(&mut self, result: String, duration_ms: u64) {
         self.result = Some(result);
         self.duration_ms = Some(duration_ms);
         self.status = ToolCallStatus::Completed;
     }
 
+    #[allow(dead_code)]
     pub fn set_failed(&mut self, error: String, duration_ms: u64) {
         self.duration_ms = Some(duration_ms);
         self.status = ToolCallStatus::Failed(error);
@@ -169,6 +173,7 @@ impl ToolActivityPanel {
         }
     }
 
+    #[allow(dead_code)]
     pub fn add_tool_call(&mut self, tool_call: ToolCallEntry) {
         self.tool_calls.push(tool_call);
         // Auto-scroll to bottom for new entries
@@ -177,6 +182,7 @@ impl ToolActivityPanel {
         }
     }
 
+    #[allow(dead_code)]
     pub fn update_tool_call(
         &mut self,
         call_id: &str,

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use colored::*;
-use luts_core::agents::{Agent, AgentMessage, PersonalityAgentBuilder};
+use luts_framework::agents::{Agent, AgentMessage, PersonalityAgentBuilder};
 use regex::Regex;
 use std::io::{self, Write};
 use std::path::PathBuf;

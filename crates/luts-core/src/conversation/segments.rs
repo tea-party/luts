@@ -4,15 +4,14 @@
 //! including message editing, deletion, reordering, and batch operations with undo/redo support.
 
 use crate::llm::InternalChatMessage;
-use crate::memory::{MemoryBlock, MemoryManager};
-use crate::conversation::export::{ExportableMessage, MessageType};
+use crate::memory::MemoryManager;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, warn, debug};
+use tracing::info;
 
 /// Represents an editable conversation segment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -302,8 +301,10 @@ pub struct ConversationSegmentEditor {
     /// Edit listeners for notifications
     edit_listeners: RwLock<Vec<Box<dyn EditListener + Send + Sync>>>,
     /// Active selections
+    #[allow(dead_code)]
     active_selections: RwLock<HashMap<String, SegmentSelection>>,
     /// Batch operations in progress
+    #[allow(dead_code)]
     batch_operations: RwLock<HashMap<String, BatchEditOperation>>,
 }
 

@@ -6,13 +6,14 @@
 use crate::{components::show_popup, events::AppEvent, markdown::SimpleMarkdownRenderer};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
-use luts_core::{
+use luts_framework::{
     agents::Agent,
+};
+use luts_core::{
     context::{
         core_blocks::{CoreBlockConfig, CoreBlockManager, CoreBlockType},
         window_manager::{
             ContextWindowConfig, ContextWindowManager, ContextWindowStats, SelectionStrategy,
-            TokenBreakdown,
         },
     },
     llm::LLMService,
@@ -64,9 +65,11 @@ pub struct ContextViewer {
     edit_mode: EditMode,
     core_blocks_state: ListState,
     dynamic_blocks_state: ListState,
+    #[allow(dead_code)]
     scroll_state: ScrollbarState,
     _event_sender: mpsc::UnboundedSender<AppEvent>,
     show_help: bool,
+    #[allow(dead_code)]
     markdown_renderer: SimpleMarkdownRenderer,
     user_id: String,
     session_id: String,

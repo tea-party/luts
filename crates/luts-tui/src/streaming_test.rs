@@ -28,7 +28,9 @@ pub struct TestScenario {
 
 /// Test context containing shared resources
 pub struct TestContext {
+    #[allow(dead_code)]
     pub data_dir: String,
+    #[allow(dead_code)]
     pub provider: String,
     pub llm_service: Arc<LLMService>,
     pub stream_manager: Arc<ResponseStreamManager>,

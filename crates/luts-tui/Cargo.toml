@@ -17,7 +17,8 @@ dotenvy = "0.15.7"
 futures = { workspace = true }
 futures-util = { workspace = true }
 genai = { workspace = true }
-luts-core = { workspace = true }
+luts-core = { path = "../luts-core", version = "0.1.0" }
+luts-framework = { path = "../luts-framework", version = "0.1.0" }
 rand = "0.8"
 ratatui = "0.28"
 regex = { workspace = true }

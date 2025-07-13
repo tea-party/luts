@@ -1,0 +1,27 @@
+[package]
+name = "luts-tools"
+version = "0.1.0"
+edition = "2024"
+description = "AI tools collection for LUTS"
+license = "MIT"
+
+[dependencies]
+luts-common = { path = "../luts-common", version = "0.1.0" }
+luts-memory = { path = "../luts-memory", version = "0.1.0" }
+luts-llm = { path = "../luts-llm", version = "0.1.0" }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+fast_html2md = "0.0.48"
+futures = { workspace = true }
+rand = { workspace = true }
+reqwest = "0.12.22"
+scraper = "0.23.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.14.0"

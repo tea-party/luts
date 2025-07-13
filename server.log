@@ -1,0 +1,176 @@
+   Compiling luts-api v0.1.0 (/Users/natalie/code/luts/crates/luts-api)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.78s
+     Running `target/debug/luts-api --host 127.0.0.1 --port 3002 --data-dir ./data --provider gemini-2.5-pro`
+[2m2025-07-09T23:01:36.172415Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Starting LUTS API server...
+[2m2025-07-09T23:01:36.172651Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Data directory: "./data"
+[2m2025-07-09T23:01:36.172683Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Provider: gemini-2.5-pro
+[2m2025-07-09T23:01:36.172890Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Using system prompt: You are a helpful AI assistant.
+[2m2025-07-09T23:01:36.173486Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.176773Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:36.177181Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:36.177282Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:36.184240Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:36.184320Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:36.420036Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:36.429698Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.429876Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.430020Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:36.430034Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:36.430040Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:36.430045Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:36.430049Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:36.644456Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:36.645701Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.645761Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.645923Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:36.645939Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:36.645946Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:36.645951Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:36.645955Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:36.846599Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:36.847881Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.847919Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:36.848078Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:36.848090Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:36.848095Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:36.848100Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:36.848104Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.052407Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:37.053684Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:37.053718Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:37.053873Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:37.053886Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.053892Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.053897Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.053901Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.255551Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:37.257155Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:37.261273Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:37.261455Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/researcher/memory.db
+[2m2025-07-09T23:01:37.261473Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.261479Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.261484Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.261487Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.463781Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/researcher/memory.db with versions disabled
+[2m2025-07-09T23:01:37.465444Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/researcher/memory.db"
+[2m2025-07-09T23:01:37.465701Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/calculator/memory.db"
+[2m2025-07-09T23:01:37.465908Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/calculator/memory.db
+[2m2025-07-09T23:01:37.465921Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.465927Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.465931Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.465935Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.475657Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/calculator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.477096Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/calculator/memory.db"
+[2m2025-07-09T23:01:37.477285Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/creative/memory.db"
+[2m2025-07-09T23:01:37.477435Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/creative/memory.db
+[2m2025-07-09T23:01:37.477443Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.477447Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.477451Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.477454Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.486075Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/creative/memory.db with versions disabled
+[2m2025-07-09T23:01:37.487316Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/creative/memory.db"
+[2m2025-07-09T23:01:37.487333Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.487450Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.487456Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.487459Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.487463Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.487465Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.513647Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.515390Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.515434Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.515622Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.515633Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.515638Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.515652Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.515656Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.545491Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.546557Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.546588Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.546752Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.546759Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.546763Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.546766Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.546769Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.576523Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.577743Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.577767Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.577936Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.577945Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.577949Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.577953Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.577957Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.608533Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.609668Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.609700Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.609897Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.609905Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.609910Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.609914Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.609918Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.639535Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.640667Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.640876Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.641021Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/coordinator/memory.db
+[2m2025-07-09T23:01:37.641028Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.641032Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.641036Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.641040Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.671800Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/coordinator/memory.db with versions disabled
+[2m2025-07-09T23:01:37.673169Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/coordinator/memory.db"
+[2m2025-07-09T23:01:37.673419Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/agents/pragmatic/memory.db"
+[2m2025-07-09T23:01:37.673678Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/agents/pragmatic/memory.db
+[2m2025-07-09T23:01:37.673690Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.673694Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.673697Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.673700Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.681755Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/agents/pragmatic/memory.db with versions disabled
+[2m2025-07-09T23:01:37.683081Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/agents/pragmatic/memory.db"
+[2m2025-07-09T23:01:37.683097Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Registering agent: researcher
+[2m2025-07-09T23:01:37.683180Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Successfully registered agent: researcher
+[2m2025-07-09T23:01:37.683186Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Registered agent: researcher
+[2m2025-07-09T23:01:37.683190Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Registering agent: calculator
+[2m2025-07-09T23:01:37.683196Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Successfully registered agent: calculator
+[2m2025-07-09T23:01:37.683200Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Registered agent: calculator
+[2m2025-07-09T23:01:37.683203Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Registering agent: creative
+[2m2025-07-09T23:01:37.683207Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Successfully registered agent: creative
+[2m2025-07-09T23:01:37.683210Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Registered agent: creative
+[2m2025-07-09T23:01:37.683213Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Registering agent: coordinator
+[2m2025-07-09T23:01:37.683227Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Successfully registered agent: coordinator
+[2m2025-07-09T23:01:37.683238Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Registered agent: coordinator
+[2m2025-07-09T23:01:37.683241Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Registering agent: pragmatic
+[2m2025-07-09T23:01:37.683245Z[0m [34mDEBUG[0m [2mluts_agents::agents::registry[0m[2m:[0m Successfully registered agent: pragmatic
+[2m2025-07-09T23:01:37.683248Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Registered agent: pragmatic
+[2m2025-07-09T23:01:37.683414Z[0m [34mDEBUG[0m [2mluts_memory::storage[0m[2m:[0m Initializing SurrealDB in file mode at: "./data/memory.db"
+[2m2025-07-09T23:01:37.683573Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Starting kvs store at surrealkv://data/memory.db
+[2m2025-07-09T23:01:37.683579Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum segment size: 536870912
+[2m2025-07-09T23:01:37.683583Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value threshold: 64
+[2m2025-07-09T23:01:37.683587Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Setting maximum value cache size: 18253611008
+[2m2025-07-09T23:01:37.683591Z[0m [32m INFO[0m [2msurrealdb::core::kvs::surrealkv[0m[2m:[0m Wait for disk sync acknowledgement: false
+[2m2025-07-09T23:01:37.759545Z[0m [32m INFO[0m [2msurrealdb::core::kvs::ds[0m[2m:[0m Started kvs store at data/memory.db with versions disabled
+[2m2025-07-09T23:01:37.760980Z[0m [32m INFO[0m [2mluts_memory::storage[0m[2m:[0m SurrealDB initialized with file backend at: "./data/memory.db"
+[2m2025-07-09T23:01:37.761418Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Binding to address: 127.0.0.1:3002
+[2m2025-07-09T23:01:37.761460Z[0m [32m INFO[0m [2mluts_api[0m[2m:[0m Server listening on 127.0.0.1:3002
+[2m2025-07-09T23:04:46.080731Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-09T23:04:46.080916Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210085Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212090Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error processing and archiving inactive nodes: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210425Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212180Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error processing and archiving inactive nodes: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210073Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212209Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210085Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212277Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210087Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212835Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210088Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.212866Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210072Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.213016Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error processing and archiving inactive nodes: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.210085Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T02:21:29.214750Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.109163Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.113210Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error processing and archiving inactive nodes: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.109161Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.120811Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error updating node registration information: Failed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.109306Z[0m [31mERROR[0m [2msurrealdb::core::kvs::node[0m[2m:[0m [3merror[0m[2m=[0mFailed to commit transaction due to a read or write conflict. This transaction can be retried
+[2m2025-07-10T05:18:11.122797Z[0m [31mERROR[0m [2msurrealdb::api::engine::tasks[0m[2m:[0m Error processing and archiving inactive nodes: Failed to commit transaction due to a read or write conflict. This transaction can be retried

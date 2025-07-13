@@ -412,6 +412,7 @@ impl ConfigManager {
         info!("Configuration reset to defaults");
     }
 
+    #[allow(dead_code)]
     pub fn get_config(&self) -> &Config {
         &self.config
     }

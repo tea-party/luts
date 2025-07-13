@@ -11,7 +11,7 @@ use crate::{
     tool_activity::ToolActivityPanel,
 };
 use anyhow::Result;
-use luts_core::agents::PersonalityAgentBuilder;
+use luts_framework::agents::PersonalityAgentBuilder;
 use luts_core::llm::LLMService;
 use ratatui::{Terminal, backend::Backend};
 use std::sync::Arc;

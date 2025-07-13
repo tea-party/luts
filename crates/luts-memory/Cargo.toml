@@ -1,0 +1,19 @@
+[package]
+name = "luts-memory"
+version = "0.1.0"
+edition = "2024"
+description = "Memory architecture and management for LUTS"
+license = "MIT"
+
+[dependencies]
+luts-common = { path = "../luts-common", version = "0.1.0" }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+surrealdb = { version = "2.3.6", features = ["kv-mem", "kv-surrealkv", "protocol-http"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

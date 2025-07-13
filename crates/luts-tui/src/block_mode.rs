@@ -3,7 +3,7 @@
 use crate::{components::show_popup, events::AppEvent, markdown::SimpleMarkdownRenderer};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
-use luts_core::memory::{
+use luts_framework::memory::{
     BlockId, BlockType, MemoryBlock, MemoryBlockBuilder, MemoryContent, MemoryManager,
     SurrealConfig, SurrealMemoryStore,
 };

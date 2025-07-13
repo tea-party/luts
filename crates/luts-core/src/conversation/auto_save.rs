@@ -294,10 +294,12 @@ pub struct AutoSaveManager {
     /// Timer for periodic saves
     save_timer: Mutex<Option<Interval>>,
     /// Pending save data
+    #[allow(dead_code)]
     pending_data: RwLock<Option<AutoSaveData>>,
     /// Auto-save statistics
     stats: RwLock<AutoSaveStats>,
     /// Conflict resolution queue
+    #[allow(dead_code)]
     conflicts: RwLock<Vec<AutoSaveConflict>>,
     /// Activity tracking
     last_activity: RwLock<DateTime<Utc>>,
@@ -585,6 +587,7 @@ impl AutoSaveManager {
 
     // Private helper methods
 
+    #[allow(dead_code)]
     async fn check_and_save(&self) -> Result<()> {
         let config = self.config.read().await.clone();
         let state = self.state.read().await.clone();

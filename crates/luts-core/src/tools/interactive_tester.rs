@@ -3,18 +3,12 @@
 //! This module provides a direct interface to test agent tools without LLM intervention.
 //! Perfect for debugging SurrealDB operations and tool functionality.
 
-use crate::memory::{MemoryManager, MemoryBlockBuilder, BlockType, MemoryContent, BlockId};
+use crate::memory::MemoryManager;
 use crate::tools::{
-    AiTool, 
-    retrieve_context::RetrieveContextTool, 
-    modify_core_block::ModifyCoreBlockTool,
-    calc::MathTool,
-    search::DDGSearchTool,
+    AiTool, block::BlockTool, calc::MathTool, delete_block::DeleteBlockTool,
+    modify_core_block::ModifyCoreBlockTool, retrieve_context::RetrieveContextTool,
+    search::DDGSearchTool, semantic_search::SemanticSearchTool, update_block::UpdateBlockTool,
     website::WebsiteTool,
-    semantic_search::SemanticSearchTool,
-    delete_block::DeleteBlockTool,
-    update_block::UpdateBlockTool,
-    block::BlockTool,
 };
 use anyhow::Result;
 use serde_json::json;
@@ -31,7 +25,7 @@ pub struct InteractiveToolTester {
     delete_tool: DeleteBlockTool,
     update_tool: UpdateBlockTool,
     semantic_search_tool: Option<SemanticSearchTool>,
-    // Utility tools  
+    // Utility tools
     calc_tool: MathTool,
     search_tool: DDGSearchTool,
     website_tool: WebsiteTool,
@@ -43,21 +37,21 @@ impl InteractiveToolTester {
         let retrieve_tool = RetrieveContextTool {
             memory_manager: memory_manager.clone(),
         };
-        
+
         let modify_tool = ModifyCoreBlockTool::new("test_user", None);
-        
+
         let block_tool = BlockTool {
             memory_manager: memory_manager.clone(),
         };
-        
+
         let delete_tool = DeleteBlockTool {
             memory_manager: memory_manager.clone(),
         };
-        
+
         let update_tool = UpdateBlockTool {
             memory_manager: memory_manager.clone(),
         };
-        
+
         // Semantic search tool might fail to create, so make it optional
         let semantic_search_tool = SemanticSearchTool::new(memory_manager.clone()).ok();
 
@@ -93,7 +87,7 @@ impl InteractiveToolTester {
         println!();
         println!("🛠️  Utility Tools:");
         println!("  c. calc          - Calculator tool");
-        println!("  w. web-search    - DuckDuckGo search");  
+        println!("  w. web-search    - DuckDuckGo search");
         println!("  s. website       - Fetch website content");
         println!();
         println!("📊 System:");
@@ -104,7 +98,7 @@ impl InteractiveToolTester {
         println!();
 
         let mut user_id = "test_user".to_string();
-        
+
         loop {
             print!("🔧 [{}] > ", user_id);
             io::stdout().flush().unwrap();
@@ -218,7 +212,7 @@ impl InteractiveToolTester {
         println!();
         println!("🛠️  Utility Tools:");
         println!("  c. calc          - Calculator tool");
-        println!("  w. web-search    - DuckDuckGo search");  
+        println!("  w. web-search    - DuckDuckGo search");
         println!("  s. website       - Fetch website content");
         println!();
         println!("📊 System:");
@@ -231,12 +225,14 @@ impl InteractiveToolTester {
 
     async fn interactive_add_block_tool(&self, user_id: &str) -> Result<()> {
         println!("📝 Add Memory Block (using Block Tool)");
-        
-        print!("Block type (1=Message, 2=Fact, 3=Summary, 4=Preference, 5=PersonalInfo, 6=Goal, 7=Task): ");
+
+        print!(
+            "Block type (1=Message, 2=Fact, 3=Summary, 4=Preference, 5=PersonalInfo, 6=Goal, 7=Task): "
+        );
         io::stdout().flush().unwrap();
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
-        
+
         let block_type_str = match input.trim() {
             "1" => "Message",
             "2" => "Fact",
@@ -480,8 +476,11 @@ impl InteractiveToolTester {
                     let content_str = content.as_str().unwrap_or("(unable to display)");
                     // Limit output to first 1000 chars to avoid overwhelming the terminal
                     if content_str.len() > 1000 {
-                        println!("{}...\n[Content truncated - {} total characters]", 
-                               &content_str[..1000], content_str.len());
+                        println!(
+                            "{}...\n[Content truncated - {} total characters]",
+                            &content_str[..1000],
+                            content_str.len()
+                        );
                     } else {
                         println!("{}", content_str);
                     }
@@ -597,8 +596,10 @@ impl InteractiveToolTester {
 
     async fn interactive_modify_core(&self, user_id: &str) -> Result<()> {
         println!("🔧 Modify Core Block");
-        
-        print!("Core block type (SystemPrompt/UserPersona/TaskContext/KeyFacts/WorkingMemory/RecentContext/LearningLog/ResponseGuidelines): ");
+
+        print!(
+            "Core block type (SystemPrompt/UserPersona/TaskContext/KeyFacts/WorkingMemory/RecentContext/LearningLog/ResponseGuidelines): "
+        );
         io::stdout().flush().unwrap();
         let mut block_type = String::new();
         io::stdin().read_line(&mut block_type)?;
@@ -632,7 +633,7 @@ impl InteractiveToolTester {
 
     async fn interactive_stats(&self, user_id: &str) -> Result<()> {
         let stats = self.memory_manager.get_stats(user_id).await?;
-        
+
         println!("📊 Memory Statistics for {}:", user_id);
         println!("  Total blocks: {}", stats.total_blocks);
         println!("  Total size: {} bytes", stats.total_size_bytes);
@@ -646,11 +647,14 @@ impl InteractiveToolTester {
     }
 
     async fn interactive_clear_user(&self, user_id: &str) -> Result<()> {
-        print!("⚠️  Are you sure you want to delete ALL data for user '{}'? (yes/no): ", user_id);
+        print!(
+            "⚠️  Are you sure you want to delete ALL data for user '{}'? (yes/no): ",
+            user_id
+        );
         io::stdout().flush().unwrap();
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
-        
+
         if input.trim().to_lowercase() == "yes" {
             let deleted_count = self.memory_manager.clear_user_data(user_id).await?;
             println!("✅ Deleted {} blocks for user {}", deleted_count, user_id);
@@ -665,7 +669,10 @@ impl InteractiveToolTester {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::{SurrealMemoryStore, SurrealConfig};
+    use crate::{
+        BlockType, MemoryBlockBuilder, MemoryContent,
+        memory::{SurrealConfig, SurrealMemoryStore},
+    };
     use tempfile::TempDir;
 
     async fn create_test_tester() -> (InteractiveToolTester, TempDir) {
@@ -681,9 +688,7 @@ mod tests {
         let store = SurrealMemoryStore::new(config).await.unwrap();
         store.initialize_schema().await.unwrap();
 
-        let memory_manager = Arc::new(
-            MemoryManager::new(store)
-        );
+        let memory_manager = Arc::new(MemoryManager::new(store));
 
         let tester = InteractiveToolTester::new(memory_manager).await.unwrap();
         (tester, temp_dir)
@@ -692,7 +697,7 @@ mod tests {
     #[tokio::test]
     async fn test_tool_creation() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
+
         // Test that we can create the tester without errors
         assert_eq!(tester.retrieve_tool.name(), "retrieve_context");
         assert_eq!(tester.modify_tool.name(), "modify_core_block");
@@ -701,12 +706,14 @@ mod tests {
     #[tokio::test]
     async fn test_add_and_retrieve_block() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
+
         // Add a block directly through memory manager
         let block = MemoryBlockBuilder::new()
             .with_user_id("test_user")
             .with_type(BlockType::Fact)
-            .with_content(MemoryContent::Text("Test fact for tool testing".to_string()))
+            .with_content(MemoryContent::Text(
+                "Test fact for tool testing".to_string(),
+            ))
             .build()
             .unwrap();
 
@@ -719,7 +726,7 @@ mod tests {
         });
 
         let result = tester.retrieve_tool.execute(params).await.unwrap();
-        
+
         // Verify the result contains our block
         assert!(result.get("blocks").is_some());
         let blocks = result["blocks"].as_array().unwrap();
@@ -730,8 +737,8 @@ mod tests {
     #[tokio::test]
     async fn test_search_functionality() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
-        // Add multiple blocks        
+
+        // Add multiple blocks
         for i in 0..3 {
             let block = MemoryBlockBuilder::new()
                 .with_user_id("test_user")
@@ -739,7 +746,7 @@ mod tests {
                 .with_content(MemoryContent::Text(format!("Searchable fact {}", i)))
                 .build()
                 .unwrap();
-            
+
             tester.memory_manager.store(block).await.unwrap();
         }
 
@@ -751,7 +758,7 @@ mod tests {
         });
 
         let result = tester.retrieve_tool.execute(params).await.unwrap();
-        
+
         // Verify we found the blocks
         let blocks = result["blocks"].as_array().unwrap();
         assert_eq!(blocks.len(), 3);
@@ -766,7 +773,7 @@ mod tests {
 
         // 1. Add multiple blocks of different types
         let mut block_ids = Vec::new();
-        
+
         let block_types = [
             (BlockType::Fact, "Important fact about the user"),
             (BlockType::Message, "User said hello"),
@@ -785,7 +792,11 @@ mod tests {
 
             let block_id = tester.memory_manager.store(block).await.unwrap();
             block_ids.push(block_id);
-            println!("✅ Added {:?} block with ID: {}", block_type, block_ids[i].as_str());
+            println!(
+                "✅ Added {:?} block with ID: {}",
+                block_type,
+                block_ids[i].as_str()
+            );
         }
 
         // 2. Verify all blocks are stored by listing them
@@ -808,8 +819,15 @@ mod tests {
 
         let result = tester.retrieve_tool.execute(params).await.unwrap();
         let filtered_blocks = result["blocks"].as_array().unwrap();
-        assert_eq!(filtered_blocks.len(), 2, "Should find 2 blocks (Fact + Preference)");
-        println!("✅ Found {} blocks when filtering by type", filtered_blocks.len());
+        assert_eq!(
+            filtered_blocks.len(),
+            2,
+            "Should find 2 blocks (Fact + Preference)"
+        );
+        println!(
+            "✅ Found {} blocks when filtering by type",
+            filtered_blocks.len()
+        );
 
         // 4. Delete every other block
         for (i, block_id) in block_ids.iter().enumerate() {
@@ -829,12 +847,22 @@ mod tests {
         let result = tester.retrieve_tool.execute(params).await.unwrap();
         let remaining_blocks = result["blocks"].as_array().unwrap();
         assert_eq!(remaining_blocks.len(), 2, "Should have 2 blocks remaining");
-        println!("✅ Verified {} blocks remain after deletion", remaining_blocks.len());
+        println!(
+            "✅ Verified {} blocks remain after deletion",
+            remaining_blocks.len()
+        );
 
         // 6. Clear all user data
-        let deleted_count = tester.memory_manager.clear_user_data(user_id).await.unwrap();
+        let deleted_count = tester
+            .memory_manager
+            .clear_user_data(user_id)
+            .await
+            .unwrap();
         assert_eq!(deleted_count, 2, "Should delete remaining 2 blocks");
-        println!("✅ Cleared all user data - deleted {} blocks", deleted_count);
+        println!(
+            "✅ Cleared all user data - deleted {} blocks",
+            deleted_count
+        );
 
         // 7. Final verification - should be empty
         let params = serde_json::json!({
@@ -853,7 +881,7 @@ mod tests {
     #[tokio::test]
     async fn test_all_tools_available() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
+
         // Test that all tools are properly initialized
         assert_eq!(tester.calc_tool.name(), "calculator");
         assert_eq!(tester.search_tool.name(), "search");
@@ -863,67 +891,75 @@ mod tests {
         assert_eq!(tester.update_tool.name(), "update_block");
         assert_eq!(tester.retrieve_tool.name(), "retrieve_context");
         assert_eq!(tester.modify_tool.name(), "modify_core_block");
-        
+
         // Check if semantic search is available (it might not be due to mock embeddings)
-        println!("Semantic search available: {}", tester.semantic_search_tool.is_some());
-        
+        println!(
+            "Semantic search available: {}",
+            tester.semantic_search_tool.is_some()
+        );
+
         println!("✅ All tools are properly initialized");
     }
 
     #[tokio::test]
     async fn test_calculator_tool() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
+
         let params = json!({
             "expression": "2 + 2"
         });
 
         let result = tester.calc_tool.execute(params).await.unwrap();
         assert_eq!(result, json!(4.0));
-        
+
         println!("✅ Calculator tool works: 2 + 2 = {}", result);
     }
 
     #[tokio::test]
     async fn test_block_tool_integration() {
         let (tester, _temp_dir) = create_test_tester().await;
-        
+
         let params = json!({
             "user_id": "test_user",
-            "block_type": "Fact", 
+            "block_type": "Fact",
             "content": "Test fact created via BlockTool",
             "session_id": "test_session"
         });
 
         let result = tester.block_tool.execute(params).await.unwrap();
-        
+
         // Should return success and block_id
         assert!(result.get("block_id").is_some());
         assert_eq!(result["success"], true);
         assert!(result.get("message").is_some());
-        
+
         println!("✅ Block tool created block: {}", result["block_id"]);
-        
+
         // Verify the block was actually created by retrieving it directly
         let block_id = result["block_id"].as_str().unwrap();
         let block_id_obj = crate::memory::BlockId::new(block_id);
-        let retrieved_block = tester.memory_manager.get(&block_id_obj).await.unwrap().unwrap();
-        
+        let retrieved_block = tester
+            .memory_manager
+            .get(&block_id_obj)
+            .await
+            .unwrap()
+            .unwrap();
+
         assert_eq!(retrieved_block.user_id(), "test_user");
         assert_eq!(
             retrieved_block.content(),
             &crate::memory::MemoryContent::Text("Test fact created via BlockTool".to_string())
         );
-        
+
         // Test the delete tool with the created block
         let block_id = result["block_id"].as_str().unwrap();
         let delete_params = json!({
             "block_id": block_id
         });
-        
+
         let delete_result = tester.delete_tool.execute(delete_params).await.unwrap();
         assert_eq!(delete_result["success"], true);
-        
+
         println!("✅ Delete tool successfully removed block");
     }
 }

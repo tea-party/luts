@@ -4,7 +4,7 @@ use crate::{components::show_popup, events::AppEvent, markdown::SimpleMarkdownRe
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use futures_util::StreamExt;
-use luts_core::agents::{Agent, AgentMessage};
+use luts_framework::agents::{Agent, AgentMessage};
 use luts_core::llm::{InternalChatMessage, LLMService};
 use luts_core::streaming::{ChunkType, ResponseStreamManager};
 use ratatui::{
@@ -98,7 +98,7 @@ pub struct ToolCall {
 pub enum ToolStatus {
     Running,
     Completed,
-    Failed(String),
+    Failed(#[allow(dead_code)] String),
 }
 
 impl ChatMessage {
@@ -283,6 +283,7 @@ impl ChatMessage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_reasoning(mut self, reasoning: String) -> Self {
         self.reasoning = Some(reasoning);
         self
@@ -435,6 +436,7 @@ impl ChatMessage {
         self.cached_lines.as_ref().unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn get_or_render_lines(
         &mut self,
         markdown_renderer: &SimpleMarkdownRenderer,
@@ -752,7 +754,7 @@ impl Conversation {
             
             // Auto-scroll to bottom
             self.scroll_to_bottom();
-        } else if let Some(llm_service) = &self.llm_service {
+        } else if let Some(_llm_service) = &self.llm_service {
             debug!("No agent available, falling back to direct LLM service: {}", message);
             // Fallback to direct LLM service only if no agent is available
             self.send_message_to_llm_service_fallback(message).await?;
@@ -824,7 +826,7 @@ impl Conversation {
     /// Handle streaming chunk events
     pub fn handle_streaming_chunk(
         &mut self,
-        chunk: luts_core::streaming::ResponseChunk,
+        chunk: luts_framework::streaming::ResponseChunk,
     ) -> Result<()> {
         if let Some(idx) = self.current_streaming_message_idx {
             if let Some(message) = self.messages.get_mut(idx) {
@@ -880,7 +882,7 @@ impl Conversation {
         info!("Streaming error: {}", error);
         Ok(())
     }
-    pub async fn handle_agent_response(&mut self, response: luts_core::agents::MessageResponse) -> Result<()> {
+    pub async fn handle_agent_response(&mut self, response: luts_framework::agents::MessageResponse) -> Result<()> {
         if let Some(agent) = &self.agent {
             let agent_name = agent.read().await.name().to_string();
             
@@ -950,6 +952,7 @@ impl Conversation {
     }
 
     /// Check if spinner should be visible
+    #[allow(dead_code)]
     pub fn spinner_active(&self) -> bool {
         self.is_streaming || self.processing
     }
@@ -1239,6 +1242,7 @@ impl Conversation {
     }
 
     /// Scroll to the bottom with specific width (called from render)
+    #[allow(dead_code)]
     fn scroll_to_bottom_with_width(&mut self, available_width: usize, visible_height: usize) {
         let total_lines = self.calculate_total_lines(available_width);
         

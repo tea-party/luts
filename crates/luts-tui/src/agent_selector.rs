@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
-use luts_core::agents::PersonalityAgentBuilder;
+use luts_framework::agents::PersonalityAgentBuilder;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},

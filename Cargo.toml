@@ -1,6 +1,17 @@
 [workspace]
 resolver = "2"
-members = ["crates/luts-core", "crates/luts-cli", "crates/luts-api", "crates/luts-tui"]
+members = [
+  "crates/luts-common",
+  "crates/luts-memory", 
+  "crates/luts-llm",
+  "crates/luts-tools",
+  "crates/luts-agents",
+  "crates/luts-framework",
+  "crates/luts-core", 
+  "crates/luts-cli", 
+  "crates/luts-api", 
+  "crates/luts-tui"
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -21,6 +32,12 @@ crossterm = "0.27"
 futures = "0.3"
 futures-util = "0.3"
 genai = "0.4.0-alpha.3"
+luts-common = { path = "crates/luts-common", version = "0.1.0" }
+luts-memory = { path = "crates/luts-memory", version = "0.1.0" }
+luts-llm = { path = "crates/luts-llm", version = "0.1.0" }
+luts-tools = { path = "crates/luts-tools", version = "0.1.0" }
+luts-agents = { path = "crates/luts-agents", version = "0.1.0" }
+luts-framework = { path = "crates/luts-framework", version = "0.1.0" }
 luts-core = { path = "crates/luts-core", version = "0.1.0" }
 rand = "0.8"
 ratatui = "0.26"

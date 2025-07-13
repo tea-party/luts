@@ -519,6 +519,7 @@ struct ConversationIndex {
 
 /// Term position in conversation
 #[derive(Debug)]
+#[allow(dead_code)]
 struct TermPosition {
     /// Message index
     message_index: usize,
@@ -530,6 +531,7 @@ struct TermPosition {
 
 /// Indexed message for search
 #[derive(Debug)]
+#[allow(dead_code)]
 struct IndexedMessage {
     /// Message ID
     id: String,

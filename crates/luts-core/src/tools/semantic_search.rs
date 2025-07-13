@@ -5,7 +5,7 @@
 
 use crate::memory::{
     MemoryManager, VectorSearchConfig, EmbeddingService, EmbeddingServiceFactory, 
-    EmbeddingConfig, EmbeddingProvider, BlockType, MemoryQuery,
+    EmbeddingConfig, EmbeddingProvider, BlockType,
 };
 use crate::tools::AiTool;
 use anyhow::{Result, anyhow};
@@ -173,7 +173,7 @@ impl AiTool for SemanticSearchTool {
         let user_id = params.user_id.unwrap_or_else(|| "current_user".to_string());
 
         // Parse block types if provided
-        let block_types = if let Some(type_strings) = params.block_types {
+        let _block_types = if let Some(type_strings) = params.block_types {
             let mut types = Vec::new();
             for type_str in type_strings {
                 match type_str.as_str() {

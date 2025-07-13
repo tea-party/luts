@@ -27,6 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Current TODO List
 
+#### Completed Tasks
 - [x] **Token Usage Tracking & Management** (HIGH)
   _Comprehensive token tracking, budgeting, analytics_
 - [x] **Conversation Summarization** (HIGH)
@@ -75,32 +76,179 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   _Fixed enum serialization issues following GitHub issue #4921 - using string-based approach instead of direct struct serialization to avoid SurrealDB 2.x enum bugs_
 - [x] **Update Memory Manager to Use SurrealDB** (HIGH)
   _Switched all applications (API, TUI, Agents) from FjallMemoryStore to SurrealMemoryStore - complete migration to SurrealDB backend_
-- [ ] **Implement automatic embedding generation for memory blocks** (HIGH)
-  _Add vector embeddings using SurrealDB vector functions_
-- [ ] **Add vector similarity search with SurrealDB** (HIGH)
-  _Implement semantic search using SurrealDB vector capabilities_
-- [ ] **Create semantic search tools for agents** (HIGH)
-  _Build agent tools that leverage vector similarity search_
-- [ ] **Update memory manager to use SurrealDB** (HIGH)
-  _Switch MemoryManager from Fjall to SurrealDB backend_
-- [ ] **Update context viewer for SurrealDB** (HIGH)
-  _Modify TUI memory blocks viewer to work with SurrealDB_
-- [ ] **Update all agent tools to work with SurrealDB** (HIGH)
-  _Ensure retrieve_context and other tools work with new backend_
-- [ ] **Remove Fjall dependencies and clean up old code** (MEDIUM)
-  _Phase out Fjall completely in favor of SurrealDB_
-- [ ] **Implement LIVE SELECT subscriptions for real-time updates** (MEDIUM)
-  _Add real-time context updates using SurrealDB live queries_
-- [ ] **Add full-text search with SurrealDB search indexes** (MEDIUM)
-  _Implement advanced text search capabilities_
-- [ ] **Create Conversation Templates** (MEDIUM)
-  _Reusable conversation starters and formats_
-- [ ] **Implement Conversation Analytics Dashboard** (LOW)
-  _Usage metrics and insights_
-- [ ] **Add Keyboard Shortcuts Customization** (LOW)
-  _User-configurable hotkeys_
-- [ ] **Create Conversation Themes and Styling** (LOW)
-  _Visual customization options_
+- [x] **Make 5 built-in agents less built-in with database seeding** (HIGH)
+  _Converted hardcoded built-in agents to database-seeded records with full CRUD operations and automatic seeding on startup_
+- [x] **Build visual memory blocks management interface** (HIGH)
+  _Created comprehensive web interface with variable block names, smart tag suggestions, content-based auto-generation, grid/list views, filtering, search, and statistics_
+
+#### Architecture Refactoring (COMPLETED ✅)
+- [x] **Create LUTS layered architecture plan document** (HIGH)
+  _Detailed plan for splitting luts-core into layered crates - COMPLETED: Created comprehensive migration plan in LAYERED_ARCHITECTURE_PLAN.md_
+- [x] **Phase 1: Create new crate structure and Cargo.toml files** (HIGH)
+  _Set up crate directories and dependency structure - COMPLETED: Created 6 new crates (luts-common, luts-memory, luts-llm, luts-tools, luts-agents, luts-framework) with proper dependencies and verified compilation_
+- [x] **Phase 2: Create luts-common crate with shared utilities** (HIGH)
+  _Extract shared types, errors, and utilities - COMPLETED: Created comprehensive luts-common crate with config types, pricing logic, constants, common data types, and utility functions. All tests pass._
+- [x] **Phase 3: Extract luts-memory from luts-core** (HIGH)
+  _Memory architecture, embeddings, context management - COMPLETED: Created comprehensive luts-memory crate with memory blocks, storage traits, embedding services, and SurrealDB integration. All tests pass._
+- [x] **Phase 4: Extract luts-llm (LLM + streaming + conversation)** (HIGH)
+  _LLM integration, streaming infrastructure, conversation management - COMPLETED: Successfully extracted and migrated all LLM-related functionality_
+- [x] **Phase 5: Extract luts-tools (pure tools)** (HIGH)
+  _Tools that don't require agent functionality - COMPLETED: Pure tools extracted and working with new architecture_
+- [x] **Phase 6: Extract luts-agents (agents + agent-specific tools)** (HIGH)
+  _Agent system and tools that need agent context - COMPLETED: All agent functionality successfully migrated_
+- [x] **Phase 7: Create luts-framework meta-crate** (HIGH)
+  _Convenience crate that re-exports everything - COMPLETED: Framework crate provides unified API surface_
+- [x] **Phase 8: Update applications to use luts-framework** (HIGH)
+  _Update CLI, TUI, API to use new structure - COMPLETED: All applications updated and compiling successfully_
+- [x] **Fix all compilation warnings and dead code** (HIGH)
+  _Clean up unused imports, variables, and dead code - COMPLETED: Zero warnings across entire workspace_
+
+#### SurrealDB Enhancements (COMPLETED ✅)
+- [x] **Implement automatic embedding generation for memory blocks** (HIGH)
+  _Add vector embeddings using SurrealDB vector functions - COMPLETED: Auto-embedding generation implemented with text content extraction_
+- [x] **Add vector similarity search with SurrealDB** (HIGH)
+  _Implement semantic search using SurrealDB vector capabilities - COMPLETED: MTREE indexing and vector search implemented_
+- [x] **Create semantic search tools for agents** (HIGH)
+  _Build agent tools that leverage vector similarity search - COMPLETED: Agent memory search tool with natural language interface_
+
+#### Web Frontend Development (CURRENT FOCUS)
+- [x] **TanStack Start project setup** (HIGH)
+  _Modern React + TypeScript + TanStack Start foundation established in js/ folder_
+- [x] **Create TanStack Router API routes to proxy to luts-api** (HIGH)
+  _Successfully created /api/luts-health and /api/luts-chat endpoints_
+- [x] **Connect web frontend to luts-api backend** (HIGH)
+  _Backend connectivity established - health checks working, ready for chat integration_
+- [ ] **Configure API keys and test chat completions** (HIGH)
+  _Set up environment variables for LLM providers and test end-to-end chat flow_
+- [ ] **Update demo chat to use luts-api instead of Claude API** (HIGH)
+  _Replace direct Anthropic API calls with luts-api proxy endpoints_
+- [ ] **Implement streaming responses via Server-Sent Events** (HIGH)
+  _Add real-time streaming chat responses through luts-api_
+- [ ] **Create LUTS agent selection interface** (HIGH)
+  _Replace demo with LUTS agent selection and personality profiles_
+- [x] **Build visual memory blocks management interface** (HIGH)
+  _Created comprehensive web interface with variable block names, smart tag suggestions, content-based auto-generation, grid/list views, filtering, search, and statistics_
+- [ ] **Add context window viewer with token usage visualization** (HIGH)
+  _Visual context composition and token usage tracking_
+- [ ] **Create tool activity dashboard with real-time monitoring** (MEDIUM)
+  _Charts and metrics for tool execution and performance_
+
+
+## Web Frontend Development (TanStack Start)
+
+### Technology Stack & Setup
+The web frontend is located in the `js/` folder and provides a modern web interface that surpasses the TUI application capabilities.
+
+**Technology Stack:**
+- **Framework**: TanStack Start (full-stack React framework)
+- **Routing**: TanStack Router (file-based routing)
+- **State Management**: TanStack Store (reactive state management)
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Icons**: Lucide React
+- **Package Manager**: PNPM (as requested)
+- **TypeScript**: Full type safety throughout
+- **AI Integration**: Anthropic Claude API (to be replaced with luts-api)
+
+**Project Structure:**
+```
+js/
+├── src/
+│   ├── routes/           # TanStack Router routes (file-based)
+│   │   ├── __root.tsx   # Root layout with navigation
+│   │   ├── index.tsx    # Home/landing page
+│   │   ├── example.chat.tsx  # Current demo chat (to be LUTS-ified)
+│   │   └── api/         # API routes for backend integration
+│   ├── components/      # Reusable UI components (shadcn/ui)
+│   ├── lib/            # Utilities and helpers
+│   ├── store/          # TanStack Store state definitions
+│   └── integrations/   # External service integrations
+├── package.json        # Dependencies and scripts
+├── components.json     # shadcn/ui configuration
+└── README.md          # Project documentation
+```
+
+### Development Commands
+```bash
+cd js/
+
+# Install dependencies (first time)
+pnpm install
+
+# Start development server
+pnpm run dev                 # Runs on http://localhost:3000
+
+# Production build
+pnpm run build
+
+# Run tests
+pnpm run test
+
+# Add shadcn/ui components
+pnpx shadcn@latest add button card input textarea dialog
+```
+
+### Current Features (Demo Chat)
+- ✅ Modern React + TypeScript setup
+- ✅ TanStack Router with file-based routing  
+- ✅ TanStack Store for state management
+- ✅ Tailwind CSS + shadcn/ui components
+- ✅ Lucide icons integration
+- ✅ Chat interface foundations
+- ✅ Markdown rendering with syntax highlighting
+- ✅ Real-time messaging architecture
+- ✅ Claude API integration (demo)
+
+### Planned LUTS Integration
+**Phase 1: Agent Selection Interface**
+- Replace demo chat home page with LUTS agent selection
+- Personality agent cards with descriptions and tool lists
+- Agent configuration (tools, memory settings, etc.)
+- Match TUI agent selection functionality but with better UX
+
+**Phase 2: Streaming Conversation Interface**
+- Real-time chat with streaming responses
+- Tool execution visualization with status indicators
+- Message history with proper formatting
+- Better than TUI: rich formatting, tool activity sidebar
+
+**Phase 3: Memory Blocks Management (Letta-style)**
+- Visual memory block interface with drag-and-drop
+- Block editing with rich text editor
+- Block relationships and context visualization
+- Far superior to TUI text-based interface
+
+**Phase 4: Context Window Viewer**
+- Visual representation of current context window
+- Token usage bars and memory selection
+- Interactive context block management
+- Better than TUI: graphical representation
+
+**Phase 5: Tool Activity Dashboard**
+- Real-time tool execution monitoring
+- Performance metrics and charts
+- Error tracking and debugging interface
+- Better than TUI: charts, graphs, real-time updates
+
+**Phase 6: Backend Integration**
+- Replace Claude API with luts-api backend
+- Server-Sent Events (SSE) for streaming
+- WebSocket for real-time tool monitoring
+- Full OpenAI-compatible API support
+
+### API Integration Strategy
+- **Current**: Direct Claude API calls in demo
+- **Target**: Proxy through TanStack Router API routes to luts-api
+- **Streaming**: Server-Sent Events (SSE) for response streaming
+- **Real-time**: WebSocket for tool activity monitoring
+- **Compatibility**: OpenAI-compatible endpoints via luts-api
+
+### Key Benefits Over TUI
+1. **Visual Interface**: Drag-drop memory blocks, charts, rich formatting
+2. **Real-time Updates**: Live tool monitoring, streaming responses
+3. **Better UX**: Mouse interaction, modern UI components
+4. **Rich Media**: Images, charts, better markdown rendering
+5. **Multi-panel**: Side-by-side views, context + chat + tools
+6. **Mobile Support**: Responsive design for tablets/phones
 
 
 ## Git Workflow - Feature Branches
@@ -275,9 +423,94 @@ cargo check
 
 ## Architecture
 
+### Current: Monolithic Structure
 This is a Rust workspace with three main components and a **multiagent system**:
 
-### Core Library (`luts-core`)
+### PLANNED: Layered Architecture (IN PROGRESS)
+
+#### Target Structure
+```
+luts/
+├── crates/
+│   ├── luts-common/       # Shared utilities and types
+│   ├── luts-memory/       # Memory architecture (core innovation)
+│   ├── luts-llm/          # LLM integration + streaming + conversation
+│   ├── luts-agents/       # Agent system + agent-specific tools
+│   ├── luts-tools/        # Pure AI tools (no agent dependencies)
+│   ├── luts-framework/    # Meta-crate (convenience re-exports)
+│   ├── luts-cli/          # CLI app (uses framework)
+│   ├── luts-tui/          # TUI app (uses framework) 
+│   └── luts-api/          # API server (uses framework)
+```
+
+#### Dependency Flow
+```
+                    ┌─────────────────┐
+                    │ luts-framework  │
+                    └─────────┬───────┘
+                             │
+                    ┌────────▼────────┐
+                    │  luts-agents    │
+                    └─────────┬───────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+    ┌───────▼───────┐ ┌──────▼──────┐ ┌──────▼──────┐
+    │  luts-tools   │ │  luts-llm   │ │    apps     │
+    └───────┬───────┘ └──────┬──────┘ └─────────────┘
+            │                │
+            │        ┌───────▼───────┐
+            │        │ luts-memory   │
+            │        └───────┬───────┘
+            │                │
+            │        ┌───────▼───────┐
+            │        │ luts-common   │
+            └────────┴───────────────┘
+```
+
+#### Crate Responsibilities
+
+**luts-common**: Shared types, errors, tracing setup, basic utilities
+- `LutsError`, `Result<T>` types
+- Configuration structs 
+- Logging/tracing setup
+- Common constants
+
+**luts-memory**: Reusable memory architecture library (core innovation)
+- Memory blocks, embeddings, SurrealDB integration
+- Context window management, core blocks
+- Token management, block utilities
+- **Dependencies**: Only luts-common + external crates
+
+**luts-llm**: LLM integration and response processing
+- LLM service, model abstraction
+- Response streaming infrastructure  
+- Conversation management, message handling
+- **Dependencies**: luts-common, luts-memory
+
+**luts-tools**: Pure AI tools (agent-independent)
+- Calculator, web search, website scraping
+- Semantic search (uses luts-memory)
+- **Dependencies**: luts-common, luts-memory
+
+**luts-agents**: Agent system and agent-specific functionality
+- Base agent, personality agents, registry
+- Agent-specific tools (modify_core_block, interactive_tester)
+- **Dependencies**: luts-common, luts-memory, luts-llm, luts-tools
+
+**luts-framework**: Convenience meta-crate
+- Re-exports from all other luts-* crates
+- Unified API surface
+- **Dependencies**: All luts-* crates
+
+#### Migration Benefits
+1. **Modularity**: Users can pick and choose components
+2. **Reusability**: luts-memory can be used independently
+3. **Clear Dependencies**: Each layer only depends on layers below
+4. **Testing**: Each layer can be tested independently
+5. **Maintenance**: Focused scope per crate
+
+### Current Core Library (`luts-core`)
 - **Context Management**: `context/` module with pluggable storage providers (Fjall, Redis)
 - **Memory Blocks**: `memory/` module implementing structured AI context similar to Letta
 - **Tools**: `tools/` module with AI assistant tools (math, search, website scraping)

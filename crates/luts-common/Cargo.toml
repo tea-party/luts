@@ -1,0 +1,14 @@
+[package]
+name = "luts-common"
+version = "0.1.0"
+edition = "2024"
+description = "Common utilities and types for LUTS"
+license = "MIT"
+
+[dependencies]
+anyhow = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

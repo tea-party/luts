@@ -1,13 +1,12 @@
 //! SurrealDB-based memory storage implementation
 //!
 //! This module provides a SurrealDB backend for memory storage, offering
-//! enhanced querying, relationships, vector search, and real-time features 
+//! enhanced querying, relationships, vector search, and real-time features
 //! compared to the basic FjallMemoryStore.
 
 use crate::memory::{
-    BlockId, BlockType, MemoryBlock, MemoryBlockBuilder, MemoryBlockMetadata, MemoryContent,
+    BlockId, BlockType, EmbeddingService, MemoryBlock, MemoryBlockMetadata, MemoryContent,
     MemoryQuery, MemoryStore, Relevance, VectorQuery,
-    EmbeddingService, EmbeddingConfig, EmbeddingServiceFactory, VectorSimilarity,
 };
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
@@ -185,9 +184,9 @@ struct RawMemoryBlock {
     pub user_id: String,
     pub session_id: Option<String>,
     pub block_type: String,
-    pub content: String,           // JSON serialized MemoryContent
-    pub metadata: String,          // JSON serialized MemoryBlockMetadata
-    pub tags: String,              // JSON serialized Vec<String>
+    pub content: String,             // JSON serialized MemoryContent
+    pub metadata: String,            // JSON serialized MemoryBlockMetadata
+    pub tags: String,                // JSON serialized Vec<String>
     pub embedding: Option<Vec<f32>>, // Vector embedding for similarity search
     pub relevance_score: Option<f32>,
     pub access_count: u64,
@@ -267,7 +266,7 @@ pub struct MemoryStats {
 /// SurrealDB implementation of MemoryStore
 pub struct SurrealMemoryStore {
     db: Surreal<Db>,
-    config: SurrealConfig,
+    _config: SurrealConfig,
     initialized: Arc<RwLock<bool>>,
     embedding_service: Option<Arc<dyn EmbeddingService>>,
 }
@@ -285,7 +284,7 @@ impl SurrealMemoryStore {
     ) -> Result<Self> {
         let db = match &config {
             SurrealConfig::File {
-                path,
+                path: _,
                 namespace,
                 database,
             } => {
@@ -302,7 +301,9 @@ impl SurrealMemoryStore {
                     .await
                     .map_err(|e| anyhow!("Failed to set namespace/database: {}", e))?;
 
-                info!("SurrealDB initialized with in-memory backend (avoiding surrealkv vector issues)");
+                info!(
+                    "SurrealDB initialized with in-memory backend (avoiding surrealkv vector issues)"
+                );
                 db
             }
             SurrealConfig::Local { .. } => {
@@ -315,7 +316,7 @@ impl SurrealMemoryStore {
 
         Ok(Self {
             db,
-            config,
+            _config: config,
             initialized: Arc::new(RwLock::new(false)),
             embedding_service,
         })
@@ -327,13 +328,19 @@ impl SurrealMemoryStore {
     }
 
     /// Initialize the database schema with custom embedding dimensions
-    pub async fn initialize_schema_with_dimensions(&self, embedding_dimensions: usize) -> Result<()> {
+    pub async fn initialize_schema_with_dimensions(
+        &self,
+        embedding_dimensions: usize,
+    ) -> Result<()> {
         let mut initialized = self.initialized.write().await;
         if *initialized {
             return Ok(());
         }
 
-        debug!("Initializing SurrealDB schema with {} embedding dimensions...", embedding_dimensions);
+        debug!(
+            "Initializing SurrealDB schema with {} embedding dimensions...",
+            embedding_dimensions
+        );
 
         // Define the memory_blocks table
         self.db
@@ -355,7 +362,7 @@ impl SurrealMemoryStore {
         ",
             embedding_dimensions
         );
-        
+
         self.db
             .query(&index_query)
             .await
@@ -382,6 +389,7 @@ impl SurrealMemoryStore {
     }
 
     /// Convert a BlockId to a SurrealDB Thing identifier
+    #[allow(dead_code)]
     fn block_id_to_thing(&self, id: &BlockId) -> Thing {
         Thing::from(("memory_blocks", id.as_str()))
     }
@@ -542,18 +550,32 @@ impl SurrealMemoryStore {
     }
 
     /// Perform vector similarity search using SurrealDB's vector functions
-    async fn vector_similarity_search(&self, query: &MemoryQuery, vector_query: &VectorQuery) -> Result<Vec<MemoryBlock>> {
+    async fn vector_similarity_search(
+        &self,
+        query: &MemoryQuery,
+        vector_query: &VectorQuery,
+    ) -> Result<Vec<MemoryBlock>> {
         let query_vector = &vector_query.query_vector;
         let search_config = &vector_query.search_config;
 
         // Build the complete SQL query with all filters
-        let mut sql = "SELECT *, vector::similarity::cosine(embedding, $query_vector) AS similarity_score 
-                       FROM memory_blocks 
-                       WHERE embedding IS NOT NONE".to_string();
-        
-        let mut bindings = vec![("query_vector", serde_json::Value::Array(
-            query_vector.iter().map(|f| serde_json::Value::Number(serde_json::Number::from_f64(*f as f64).unwrap())).collect()
-        ))];
+        let mut sql =
+            "SELECT *, vector::similarity::cosine(embedding, $query_vector) AS similarity_score
+                       FROM memory_blocks
+                       WHERE embedding IS NOT NONE"
+                .to_string();
+
+        let mut bindings = vec![(
+            "query_vector",
+            serde_json::Value::Array(
+                query_vector
+                    .iter()
+                    .map(|f| {
+                        serde_json::Value::Number(serde_json::Number::from_f64(*f as f64).unwrap())
+                    })
+                    .collect(),
+            ),
+        )];
 
         // Add user_id filter
         if let Some(user_id) = &query.user_id {
@@ -570,15 +592,24 @@ impl SurrealMemoryStore {
         // Add block_type filter
         if !query.block_types.is_empty() {
             sql.push_str(" AND block_type IN $block_types");
-            let types: Vec<String> = query.block_types.iter().map(|t| format!("{:?}", t)).collect();
-            bindings.push(("block_types", serde_json::Value::Array(
-                types.into_iter().map(serde_json::Value::String).collect()
-            )));
+            let types: Vec<String> = query
+                .block_types
+                .iter()
+                .map(|t| format!("{:?}", t))
+                .collect();
+            bindings.push((
+                "block_types",
+                serde_json::Value::Array(
+                    types.into_iter().map(serde_json::Value::String).collect(),
+                ),
+            ));
         }
 
         // Add similarity threshold filter
-        sql.push_str(&format!(" AND vector::similarity::cosine(embedding, $query_vector) >= {}", 
-                             search_config.similarity_threshold));
+        sql.push_str(&format!(
+            " AND vector::similarity::cosine(embedding, $query_vector) >= {}",
+            search_config.similarity_threshold
+        ));
 
         // Order by similarity score descending
         sql.push_str(" ORDER BY similarity_score DESC");
@@ -605,21 +636,25 @@ impl SurrealMemoryStore {
         let mut memory_blocks = Vec::new();
         for result in results {
             // Extract the similarity score
-            let similarity_score = result.get("similarity_score")
+            let similarity_score = result
+                .get("similarity_score")
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.0) as f32;
 
             // Parse the RawMemoryBlock from the result (excluding similarity_score)
             let raw_block: RawMemoryBlock = serde_json::from_value(result)?;
             let mut enhanced_block = raw_block.to_enhanced()?;
-            
+
             // Set the relevance score based on similarity
             enhanced_block.relevance_score = Some(similarity_score);
-            
+
             memory_blocks.push(enhanced_block.into());
         }
 
-        debug!("Vector similarity search returned {} blocks", memory_blocks.len());
+        debug!(
+            "Vector similarity search returned {} blocks",
+            memory_blocks.len()
+        );
         Ok(memory_blocks)
     }
 
@@ -710,7 +745,10 @@ impl MemoryStore for SurrealMemoryStore {
                     MemoryContent::Json(json) => json.to_string(),
                     MemoryContent::Binary { .. } => {
                         // Skip embedding for binary content
-                        warn!("Skipping embedding generation for binary content in block {}", block_id.as_str());
+                        warn!(
+                            "Skipping embedding generation for binary content in block {}",
+                            block_id.as_str()
+                        );
                         String::new()
                     }
                 };
@@ -722,7 +760,11 @@ impl MemoryStore for SurrealMemoryStore {
                             debug!("Generated embedding for block {}", block_id.as_str());
                         }
                         Err(e) => {
-                            warn!("Failed to generate embedding for block {}: {}", block_id.as_str(), e);
+                            warn!(
+                                "Failed to generate embedding for block {}: {}",
+                                block_id.as_str(),
+                                e
+                            );
                             // Continue without embedding rather than failing the entire operation
                         }
                     }
@@ -939,6 +981,8 @@ impl MemoryStore for SurrealMemoryStore {
 
 #[cfg(test)]
 mod tests {
+    use crate::MemoryBlockBuilder;
+
     use super::*;
     use tempfile::TempDir;
 

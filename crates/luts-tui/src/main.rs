@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use luts_core::agents::PersonalityAgentBuilder;
+use luts_framework::agents::PersonalityAgentBuilder;
 use std::path::PathBuf;
 use tracing::info;
 

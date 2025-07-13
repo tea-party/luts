@@ -1,10 +1,10 @@
 //! Tool for agents to modify their own core context blocks
 //!
-//! This tool allows AI agents to update their core blocks like SystemPrompt, 
+//! This tool allows AI agents to update their core blocks like SystemPrompt,
 //! UserPersona, TaskContext, etc. This enables self-modification and adaptation.
 
+use crate::context::core_blocks::{CoreBlockConfig, CoreBlockManager, CoreBlockType};
 use crate::tools::AiTool;
-use crate::context::core_blocks::{CoreBlockManager, CoreBlockType, CoreBlockConfig};
 use anyhow::{Error, Result, anyhow};
 use async_trait::async_trait;
 use serde_json::{Value, json};
@@ -49,7 +49,7 @@ impl AiTool for ModifyCoreBlockTool {
                     "type": "string",
                     "enum": [
                         "SystemPrompt",
-                        "UserPersona", 
+                        "UserPersona",
                         "TaskContext",
                         "KeyFacts",
                         "UserPreferences",
@@ -79,7 +79,7 @@ impl AiTool for ModifyCoreBlockTool {
             .get("block_type")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow!("Missing block_type"))?;
-        
+
         let new_content = params
             .get("content")
             .and_then(|v| v.as_str())
@@ -104,7 +104,7 @@ impl AiTool for ModifyCoreBlockTool {
         };
 
         let mut manager = self.core_block_manager.write().await;
-        
+
         // Ensure core blocks are initialized
         manager.initialize()?;
 
@@ -122,7 +122,7 @@ impl AiTool for ModifyCoreBlockTool {
                 } else {
                     new_content.to_string()
                 }
-            },
+            }
             "prepend" => {
                 // Get existing content and prepend
                 if let Some(existing_block) = manager.get_block(core_block_type) {
@@ -134,19 +134,24 @@ impl AiTool for ModifyCoreBlockTool {
                 } else {
                     new_content.to_string()
                 }
-            },
-            _ => return Err(anyhow!("Invalid operation: {}. Use 'replace', 'append', or 'prepend'", operation)),
+            }
+            _ => {
+                return Err(anyhow!(
+                    "Invalid operation: {}. Use 'replace', 'append', or 'prepend'",
+                    operation
+                ));
+            }
         };
 
         // Update the core block
         manager.update_block(core_block_type, final_content.clone())?;
-        
+
         // Get stats for response
         let stats = manager.get_stats();
 
         Ok(json!({
             "success": true,
-            "message": format!("Successfully {} {} core block", 
+            "message": format!("Successfully {} {} core block",
                 match operation {
                     "replace" => "replaced",
                     "append" => "appended to",
@@ -168,12 +173,11 @@ impl AiTool for ModifyCoreBlockTool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::context::core_blocks::CoreBlockConfig;
 
     #[tokio::test]
     async fn test_modify_core_block_replace() {
         let tool = ModifyCoreBlockTool::new("test_user", None);
-        
+
         let params = json!({
             "block_type": "UserPersona",
             "content": "I am a software engineer specializing in Rust and AI systems.",
@@ -181,7 +185,7 @@ mod tests {
         });
 
         let result = tool.execute(params).await.unwrap();
-        
+
         assert_eq!(result["success"], true);
         assert_eq!(result["block_type"], "UserPersona");
         assert_eq!(result["operation"], "replace");
@@ -190,7 +194,7 @@ mod tests {
     #[tokio::test]
     async fn test_modify_core_block_append() {
         let tool = ModifyCoreBlockTool::new("test_user", None);
-        
+
         // First set some initial content
         let initial_params = json!({
             "block_type": "KeyFacts",
@@ -201,13 +205,13 @@ mod tests {
 
         // Now append to it
         let append_params = json!({
-            "block_type": "KeyFacts", 
+            "block_type": "KeyFacts",
             "content": "The user is working on a TUI application.",
             "operation": "append"
         });
 
         let result = tool.execute(append_params).await.unwrap();
-        
+
         assert_eq!(result["success"], true);
         assert_eq!(result["operation"], "append");
     }
@@ -215,7 +219,7 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_block_type() {
         let tool = ModifyCoreBlockTool::new("test_user", None);
-        
+
         let params = json!({
             "block_type": "InvalidType",
             "content": "Some content"
@@ -223,13 +227,18 @@ mod tests {
 
         let result = tool.execute(params).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid block_type"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid block_type")
+        );
     }
 
     #[tokio::test]
     async fn test_system_prompt_modification() {
         let tool = ModifyCoreBlockTool::new("test_user", None);
-        
+
         let params = json!({
             "block_type": "SystemPrompt",
             "content": "You are a helpful AI assistant with expertise in Rust programming. Always provide code examples when explaining concepts.",
@@ -237,10 +246,10 @@ mod tests {
         });
 
         let result = tool.execute(params).await.unwrap();
-        
+
         assert_eq!(result["success"], true);
         assert_eq!(result["block_type"], "SystemPrompt");
-        
+
         // Verify the content was set by checking it exists
         let manager = tool.core_block_manager.read().await;
         // Note: We can't easily test the actual content here due to the mutable borrow,

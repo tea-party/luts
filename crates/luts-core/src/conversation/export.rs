@@ -319,6 +319,7 @@ impl Default for ImportSettings {
 /// Conversation export/import manager
 pub struct ConversationExporter {
     /// Storage directory for exports
+    #[allow(dead_code)]
     storage_dir: PathBuf,
     /// Memory manager for accessing memory blocks
     memory_manager: Option<Arc<MemoryManager>>,

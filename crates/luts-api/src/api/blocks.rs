@@ -3,8 +3,8 @@ use axum::{
     extract::{Json, Path, State},
     routing::{get, post},
 };
-use luts_core::utils::blocks::BlockUtils;
-use luts_core::memory::{BlockId, MemoryBlock, MemoryQuery};
+use luts_framework::BlockUtils;
+use luts_framework::memory::{BlockId, MemoryBlock, MemoryQuery};
 use serde_json::json;
 use std::sync::Arc;
 

@@ -56,6 +56,7 @@ impl SelectableList {
         self.state.select(Some(i));
     }
 
+    #[allow(dead_code)]
     pub fn selected(&self) -> Option<&String> {
         self.state.selected().and_then(|i| self.items.get(i))
     }
